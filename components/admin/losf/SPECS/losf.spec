@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,28 +8,24 @@
 #
 #----------------------------------------------------------------------------eh-
 
-%include %{_sourcedir}/FSP_macros
+%include %{_sourcedir}/OHPC_macros
 
 %define pname losf
-%{!?PROJ_DELIM:%define PROJ_DELIM %{nil}}
 
 Summary:   A Linux operating system framework for managing HPC clusters
 Name:      %{pname}%{PROJ_DELIM}
-Version:   0.52.0
-Release:   1
+Version:   0.56.0
+Release:   1%{?dist}
 License:   GPL-2
-Group:     fsp/admin
+Group:     %{PROJ_NAME}/admin
 BuildArch: noarch
-URL:       https://github.com/hpcsi/losf 
-Source0:   %{pname}-%{version}.tar.gz
-Source1:   FSP_macros
-BuildRoot: %{_tmppath}/%{pname}-%{version}-%{release}-root
-DocDir:    %{FSP_PUB}/doc/contrib
+URL:       https://github.com/hpcsi/losf
+Source0:   https://github.com/hpcsi/losf/archive/v%{version}.tar.gz#$/%{pname}-%{version}.tar.gz
 
-%if 0%{?FSP_BUILD}
-%{!?prefix: %define prefix %{FSP_ADMIN}}
+%if 0%{?OHPC_BUILD}
+%{!?prefix: %global prefix %{OHPC_ADMIN}}
 %else
-%{!?prefix: %define prefix /opt}
+%{!?prefix: %global prefix /opt}
 %endif
 
 
@@ -42,14 +38,13 @@ provides: perl(LosF_utils)
 provides: perl(LosF_history_utils)
 
 %if 0%{?sles_version} || 0%{?suse_version}
-requires: perl-Config-IniFiles >= 2.43 
-requires: perl-Log-Log4perl
+Requires: perl-Config-IniFiles >= 2.43
+Requires: perl-Log-Log4perl
 %else
 requires: yum-plugin-downloadonly
 %endif
 
 %define __spec_install_post %{nil}
-%define debug_package %{nil}
 %define __os_install_post %{_dbpath}/brp-compress
 
 %description
@@ -63,11 +58,7 @@ cluster.
 %prep
 %setup -q -n %{pname}-%{version}
 
-%build
-# Binary pass-through - empty build section
-
 %install
-rm -rf $RPM_BUILD_ROOT
 %{__mkdir_p} %{buildroot}/%{installPath}
 %{__mkdir_p} %{buildroot}/etc/profile.d
 cp -a * %{buildroot}/%{installPath}
@@ -84,16 +75,11 @@ for i in losf update initconfig koomie_cf sync_config_files node_types rpm_topdi
     ln -sf %{installPath}/$i ${RPM_BUILD_ROOT}/%{_bindir}
 done
 
-for i in idisk ilog ioff ion ipxe ireboot ireset isensor isoft istat ; do 
+for i in idisk ilog ioff ion ipxe ireboot ireset isensor isoft istat ; do
     ln -sf %{installPath}/utils/$i ${RPM_BUILD_ROOT}/%{_bindir}
 done
 
 %{__mkdir_p} ${RPM_BUILD_ROOT}/%{_docdir}
-
-%clean
-rm -rf $RPM_BUILD_ROOT
-
-%post
 
 %postun
 
@@ -106,16 +92,6 @@ if [ "$1" = 0 ];then
 fi
 
 %files
-%defattr(-,root,root,-)
-%if 0%{?FSP_BUILD}
-%dir %{FSP_HOME}
-%dir %{prefix}
-
-%endif
-
 %{installPath}
 %{_bindir}/*
-
-%{FSP_PUB}
 %doc LICENSE COPYING CHANGES README
-

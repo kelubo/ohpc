@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,60 +8,58 @@
 #
 #----------------------------------------------------------------------------eh-
 
-%include %{_sourcedir}/FSP_macros
-%{!?PROJ_DELIM:%define PROJ_DELIM %{nil}}
+%include %{_sourcedir}/OHPC_macros
 
-Summary: Example source code and templates for use within FSP environment.
+Summary: Example source code and templates for use within OpenHPC environment.
 Name:    examples%{PROJ_DELIM}
-Version: 1.2
+Version: 1.5
 Release: 1
-License: BSD-3
-Group:   fsp/admin
-Source0: FSP_macros
-Source1: hello.c
-Source2: ifcfg-ib0
-Source3: ifcfg-ib0.sles.ww
-Source4: ifcfg-ib0.centos.ww
-Source5: job.mpi
-Source6: 60-ipath.rules
-Source7: LICENSE
+License: Apache-2.0
+Group:   %{PROJ_NAME}/admin
+URL:     https://github.com/openhpc/ohpc
+Source0: LICENSE
+Source1:  hello.c
+Source2:  ifcfg-ib0
+Source3:  ifcfg-ib0.sles.ww
+Source4:  ifcfg-ib0.centos.ww
+Source5:  job.mpi
+Source6:  60-ipath.rules
+Source7:  gmond.conf
+Source8:  job.pbs.mpi
+Source10: example.modulefile
+Source11: example-mpi-dependent.modulefile
 
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-DocDir:    %{FSP_PUB}/doc/contrib
+
 
 %description
 
 Collection of simple example programs and file templates for use within
-FSP development environment.
+OpenHPC development environment.
 
 %prep
 
-%{__cp} %SOURCE7 .
+%{__cp} %SOURCE0 .
 
 %build
 
 %install
 
-install -D -m 0644 %SOURCE1 %{buildroot}%{FSP_HOME}/pub/examples/mpi/hello.c
-install -D -m 0644 %SOURCE2 %{buildroot}%{FSP_HOME}/pub/examples/network/sles/ifcfg-ib0
-install -D -m 0644 %SOURCE2 %{buildroot}%{FSP_HOME}/pub/examples/network/centos/ifcfg-ib0
+install -D -m 0644 %SOURCE1 %{buildroot}%{OHPC_HOME}/pub/examples/mpi/hello.c
+install -D -m 0644 %SOURCE2 %{buildroot}%{OHPC_HOME}/pub/examples/network/sles/ifcfg-ib0
+install -D -m 0644 %SOURCE2 %{buildroot}%{OHPC_HOME}/pub/examples/network/centos/ifcfg-ib0
 
-install -D -m 0644 %SOURCE3 %{buildroot}%{FSP_HOME}/pub/examples/network/sles/ifcfg-ib0.ww
-install -D -m 0644 %SOURCE4 %{buildroot}%{FSP_HOME}/pub/examples/network/centos/ifcfg-ib0.ww
-install -D -m 0644 %SOURCE5 %{buildroot}%{FSP_HOME}/pub/examples/slurm/job.mpi
-install -D -m 0644 %SOURCE6 %{buildroot}%{FSP_HOME}/pub/examples/udev/60-ipath.rules
+install -D -m 0644 %SOURCE3 %{buildroot}%{OHPC_HOME}/pub/examples/network/sles/ifcfg-ib0.ww
+install -D -m 0644 %SOURCE4 %{buildroot}%{OHPC_HOME}/pub/examples/network/centos/ifcfg-ib0.ww
+install -D -m 0644 %SOURCE5 %{buildroot}%{OHPC_HOME}/pub/examples/slurm/job.mpi
+install -D -m 0644 %SOURCE6 %{buildroot}%{OHPC_HOME}/pub/examples/udev/60-ipath.rules
+install -D -m 0644 %SOURCE7 %{buildroot}%{OHPC_HOME}/pub/examples/ganglia/gmond.conf
+install -D -m 0644 %SOURCE8 %{buildroot}%{OHPC_HOME}/pub/examples/pbspro/job.mpi
+install -D -m 0644 %SOURCE10 %{buildroot}%{OHPC_HOME}/pub/examples/example.modulefile
+install -D -m 0644 %SOURCE11 %{buildroot}%{OHPC_HOME}/pub/examples/example-mpi-dependent.modulefile
 
 %{__mkdir_p} ${RPM_BUILD_ROOT}/%{_docdir}
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
-
 %files
-%defattr(-,root,root,-)
-%dir %{FSP_HOME}
+%dir %{OHPC_HOME}
 %doc LICENSE
-%{FSP_PUB}
-
-%changelog
-
+%{OHPC_PUB}

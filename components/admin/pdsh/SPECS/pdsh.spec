@@ -1,5 +1,5 @@
-#----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+#---------------------------------------------------------------------------bh-
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,29 +8,25 @@
 #
 #----------------------------------------------------------------------------eh-
 
-%include %{_sourcedir}/FSP_macros
+%include %{_sourcedir}/OHPC_macros
 
-%define pname pdsh
-%{!?PROJ_DELIM:%define PROJ_DELIM %{nil}}
+%global pname pdsh
 
 Summary:   Parallel remote shell program
 Name:      %{pname}%{PROJ_DELIM}
-Version:   2.31
-Release:   %{_rel}
+Version:   2.33
+Release:   1%{?dist}
 License:   GPL
-Url:       http://sourceforge.net/projects/pdsh
-DocDir:    %{FSP_PUB}/doc/contrib
-Group:     fsp/admin
-Source0:   pdsh-%{version}.tar.bz2
-BuildRoot: %{_tmppath}/%{pname}-%{version}-%{release}-root
-
-%define debug_package %{nil}
+Url:       https://github.com/chaos/pdsh
+Group:     %{PROJ_NAME}/admin
+Source0:   https://github.com/chaos/%{pname}/releases/download/%{pname}-%{version}/%{pname}-%{version}.tar.gz
+Patch1:    pdsh-slurm-list.patch
 
 ### karl.w.schulz@intel.com (11/07/14) - temporarily disabling rcmd requirement
 ### Requires: pdsh-rcmd
 
 # Default library install path
-%define install_path %{FSP_HOME}/admin/%{pname}
+%global install_path %{OHPC_HOME}/admin/%{pname}
 
 #
 # Enabling and disabling pdsh options
@@ -53,21 +49,21 @@ BuildRoot: %{_tmppath}/%{pname}-%{version}-%{release}-root
 #
 #  Definition of default packages to build on various platforms:
 # 
-%define _defaults ssh exec readline pam slurm
+%global _defaults ssh exec readline pam
 
 #   LLNL system defaults
-%if 0%{?chaos}
-%define _default_with %{_defaults} mrsh nodeupdown genders slurm 
-%else
+#%if 0%{?chaos}
+#%global _default_with %{_defaults} mrsh nodeupdown genders slurm
+#%else
 #   All other defaults
-%define _default_with %{_defaults} dshgroups netgroup machines 
-%endif
+%global _default_with %{_defaults} mrsh genders slurm
+#%endif
 
 #
 #   Environment variables can be used to override defaults above:
 #
-%define _env_without ${PDSH_WITHOUT_OPTIONS}
-%define _env_with    ${PDSH_WITH_OPTIONS} 
+#%global _env_without ${PDSH_WITHOUT_OPTIONS}
+#%global _env_with    ${PDSH_WITH_OPTIONS}
 
 #   Shortcut for % global expansion
 %define dstr "%%%%"global
@@ -124,17 +120,19 @@ BuildRoot: %{_tmppath}/%{pname}-%{version}-%{release}-root
 # (See /usr/share/doc/rpm-*/conditionalbuilds)
 #
 %if %{?_with_debug:1}%{!?_with_debug:0}
-  %define _enable_debug --enable-debug
+  %global _enable_debug --enable-debug
 %endif
 
 
-%{?_with_mrsh:BuildRequires: munge-devel}
+#%{?_with_mrsh:BuildRequires: munge-devel%{PROJ_DELIM}}
+#BuildRequires: munge-devel%{PROJ_DELIM}
 %{?_with_qshell:BuildRequires: qsnetlibs}
 %{?_with_mqshell:BuildRequires: qsnetlibs}
 %{?_with_readline:BuildRequires: readline-devel}
 %{?_with_readline:BuildRequires: ncurses-devel}
 %{?_with_nodeupdown:BuildRequires: whatsup}
-%{?_with_genders:BuildRequires: genders > 1.0}
+#%{?_with_genders:BuildRequires: genders > 1.0}
+#BuildRequires: genders > 1.0
 %{?_with_pam:BuildRequires: pam-devel}
 %{?_with_slurm:BuildRequires: slurm-devel%{PROJ_DELIM}}
 %{?_with_torque:BuildRequires: torque-devel}
@@ -143,7 +141,6 @@ BuildRoot: %{_tmppath}/%{pname}-%{version}-%{release}-root
 BuildRequires: ncurses-devel
 BuildRequires: readline-devel
 BuildRequires: pam-devel
-BuildRequires: slurm-devel%{PROJ_DELIM}
 
 
 ##############################################################################
@@ -171,7 +168,7 @@ Group:   System Environment/Base
 Requires:  xinetd
 %description mqshd
 Remote shell service for running Quadrics QsNet jobs under pdsh with
-mrsh authentication.  Sets up Elan capabilities and environment variables 
+mrsh authentication.  Sets up Elan capabilities and environment variables
 needed by Quadrics MPICH executables.
 ##############################################################################
 
@@ -237,19 +234,20 @@ The command executed for each host is built from the pdsh
 to execute, followed by any arguments including "%h", "%u", and
 "%n", which are the remote target, username, and rank respectively.
 
-%package   mod-genders
+%package   -n pdsh-mod-genders%{PROJ_DELIM}
 Summary:   Provides libgenders support for pdsh
 Group:     System Environment/Base
-Requires:  genders >= 1.1
+Requires:  genders%{PROJ_DELIM} >= 1.1
+BuildRequires: genders%{PROJ_DELIM}
 Conflicts: pdsh-mod-nodeattr
 Conflicts: pdsh-mod-machines
-%description mod-genders
+%description -n pdsh-mod-genders%{PROJ_DELIM}
 Pdsh module for libgenders functionality.
 
 %package   mod-nodeattr
 Summary:   Provides genders support for pdsh using the nodeattr program
 Group:     System Environment/Base
-Requires:  genders 
+Requires:  genders
 Conflicts: pdsh-mod-genders
 Conflicts: pdsh-mod-machines
 %description mod-nodeattr
@@ -290,11 +288,12 @@ Group:     System Environment/Base
 Pdsh module providing support for targeting hosts based on netgroup.
 Provides -g groupname and -X groupname options to pdsh.
 
-%package   mod-slurm
+%package   -n pdsh-mod-slurm%{PROJ_DELIM}
 Summary:   Provides support for running pdsh under SLURM allocations
 Group:     System Environment/Base
-Requires:  slurm
-%description mod-slurm
+Requires:  slurm%{PROJ_DELIM}
+BuildRequires: slurm-devel%{PROJ_DELIM}
+%description -n pdsh-mod-slurm%{PROJ_DELIM}
 Pdsh module providing support for gathering the list of target nodes
 from an allocated SLURM job.
 
@@ -312,38 +311,35 @@ from an allocated Torque job.
 
 %prep
 %setup  -q -n %{pname}-%{version}
+%patch1 -p1
 ##############################################################################
 
 %build
 
+# work around old config.guess on aarch64 systems
+%ifarch aarch64 || ppc64le
+cp /usr/lib/rpm/config.guess config
+%endif
+
 ./configure --prefix=%{install_path} \
+    --with-rcmd-rank-list="ssh mrsh rsh krb4 exec xcpu" \
     %{?_enable_debug}       \
-    %{?_with_pam}           \
-    %{?_without_pam}        \
     %{?_with_rsh}           \
     %{?_without_rsh}        \
     %{?_with_ssh}           \
     %{?_without_ssh}        \
     %{?_with_exec}          \
     %{?_without_exec}       \
-    %{?_with_qshell}        \
-    %{?_without_qshell}     \
     %{?_with_readline}      \
     %{?_without_readline}   \
     %{?_with_machines}      \
     %{?_without_machines}   \
     %{?_with_genders}       \
     %{?_without_genders}    \
-    %{?_with_rms}           \
-    %{?_without_rms}        \
     %{?_with_nodeupdown}    \
     %{?_without_nodeupdown} \
-    %{?_with_nodeattr}      \
-    %{?_without_nodeattr}   \
     %{?_with_mrsh}          \
     %{?_without_mrsh}       \
-    %{?_with_mqshell}       \
-    %{?_without_mqshell}    \
     %{?_with_xcpu}       \
     %{?_without_xcpu}    \
     %{?_with_slurm}         \
@@ -353,16 +349,15 @@ from an allocated Torque job.
     %{?_with_dshgroups}     \
     %{?_without_dshgroups}  \
     %{?_with_netgroup}      \
-    %{?_without_netgroup} 
-    
-           
+    %{?_without_netgroup}
+
+
 # FIXME: build fails when trying to build with _smp_mflags if qsnet is enabled
 make %{_smp_mflags} CFLAGS="$RPM_OPT_FLAGS"
 
 ##############################################################################
 
 %install
-rm -rf $RPM_BUILD_ROOT
 %{__mkdir_p} $RPM_BUILD_ROOT
 DESTDIR="$RPM_BUILD_ROOT" make install
 if [ -x $RPM_BUILD_ROOT/%{_sbindir}/in.qshd ]; then
@@ -372,11 +367,11 @@ if [ -x $RPM_BUILD_ROOT/%{_sbindir}/in.mqshd ]; then
    install -D -m644 etc/mqshell.xinetd $RPM_BUILD_ROOT/%{_sysconfdir}/xinetd.d/mqshell
 fi
 
-%if 0%{?FSP_BUILD}
+%if 0%{?OHPC_BUILD}
 # install_doc_files
 %endif
 
-# 
+#
 # Remove all module .a's as they are not needed on any known RPM platform.
 find "%buildroot" -type f -name "*.a" | xargs rm -f
 
@@ -388,30 +383,35 @@ ln -sf %{install_path}/bin/dshbak ${RPM_BUILD_ROOT}/%{_bindir}
 ln -sf %{install_path}/bin/pdcp ${RPM_BUILD_ROOT}/%{_bindir}
 ln -sf %{install_path}/bin/rpdcp ${RPM_BUILD_ROOT}/%{_bindir}
 
+find ${RPM_BUILD_ROOT}
+
 %{__mkdir_p} ${RPM_BUILD_ROOT}/%{_docdir}
 
-##############################################################################
-
-%clean
-rm -rf "$RPM_BUILD_ROOT"
-##############################################################################
-
 %files
-%defattr(-,root,root)
-%doc COPYING README NEWS DISCLAIMER 
-%doc README.KRB4 README.modules README.QsNet
-%{FSP_HOME}
-%{FSP_PUB}
+%doc COPYING README NEWS DISCLAIMER.LLNS DISCLAIMER.UC
+%doc README.KRB4 README.modules
+%{OHPC_HOME}
+%{OHPC_PUB}
 %{_bindir}/pdsh
 %{_bindir}/dshbak
 %{_bindir}/pdcp
 %{_bindir}/rpdcp
+%exclude %{install_path}/lib/pdsh/genders.*
+%exclude %{install_path}/lib/pdsh/slurm.*
 
-%if 0%{?FSP_BUILD}
-# dir %{FSP_PUB}/share/doc
-# {FSP_PUB}/share/doc/%{pname}
+%if 0%{?OHPC_BUILD}
+# dir %{OHPC_PUB}/share/doc
+# {OHPC_PUB}/share/doc/%{pname}
 %doc AUTHORS
 
 %endif
 
-%changelog
+%if %{?_with_genders:1}%{!?_with_genders:0}
+%files -n pdsh-mod-genders%{PROJ_DELIM}
+%{install_path}/lib/pdsh/genders.*
+%endif
+
+%if %{?_with_slurm:1}%{!?_with_slurm:0}
+%files -n pdsh-mod-slurm%{PROJ_DELIM}
+%{install_path}/lib/pdsh/slurm.*
+%endif

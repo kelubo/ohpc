@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,35 +8,27 @@
 #
 #----------------------------------------------------------------------------eh-
 
-%{!?_rel:%{expand:%%global _rel 0.r%(test "1686" != "0000" && echo "1686" || svnversion | sed 's/[^0-9].*$//' | grep '^[0-9][0-9]*$' || git svn find-rev `git show -s --pretty=format:%h` || echo 0000)}}
-%include %{_sourcedir}/FSP_macros
+%include %{_sourcedir}/OHPC_macros
+
 %define pname warewulf-ipmi
-%define debug_package %{nil}
+%define dname ipmi
 %define wwpkgdir /srv/warewulf
 
-%if 0%{?PROJ_NAME:1}
-%define rpmname %{pname}-%{PROJ_NAME}
-%else
-%define rpmname %{pname}
-%endif
-
-Name: %{rpmname}
+Name: %{pname}%{PROJ_DELIM}
 Summary: IPMI Module for Warewulf
-Version: 3.6
-Release: %{_rel}%{?dist}
-#Release: 1%{?dist}
+Version: 3.8.1
+Release: 1%{?dist}
 License: US Dept. of Energy (BSD-like)
-Group: fsp/provisioning
+Group: %{PROJ_NAME}/provisioning
 URL: http://warewulf.lbl.gov/
-Source0: %{pname}-%{version}.tar.gz
-Source1: FSP_macros
-ExclusiveOS: linux
-Requires: warewulf-common-fsp
-BuildRequires: warewulf-common-fsp
+Source0: https://github.com/warewulf/warewulf3/archive/%{version}.tar.gz#/warewulf3-%{version}.tar.gz
+Requires: warewulf-common%{PROJ_DELIM}
+BuildRequires: autoconf
+BuildRequires: automake
+BuildRequires: openssl-devel
+BuildRequires: warewulf-common%{PROJ_DELIM}
 Conflicts: warewulf < 3
-BuildConflicts: post-build-checks
-BuildRoot: %{?_tmppath}%{!?_tmppath:/var/tmp}/%{pname}-%{version}-%{release}-root
-DocDir: %{FSP_PUB}/doc/contrib
+#!BuildIgnore: post-build-checks
 
 %description
 Warewulf >= 3 is a set of utilities designed to better enable
@@ -46,32 +38,39 @@ This is the IPMI module package.  It contains Warewulf modules for
 adding IPMI functionality.
 
 
-%prep
-%setup -n %{pname}-%{version}
+%package -n %{pname}-initramfs-%{_arch}%{PROJ_DELIM}
+Summary: Warewulf - IPMI Module - Initramfs IPMI Capabilities for %{_arch}
+Group: System Environment/Clustering
+BuildArch: noarch
+%description -n %{pname}-initramfs-%{_arch}%{PROJ_DELIM}
+Warewulf Provisioning initramfs IPMI capabilities for %{_arch}.
 
+
+%prep
+%setup -n warewulf3-%{version}
 
 %build
+cd %{dname}
+if [ ! -f configure ]; then
+    ./autogen.sh
+fi
 %configure --localstatedir=%{wwpkgdir}
-%{__make} %{?mflags}
+%{__make} %{?_smp_mflags}
 
 
 %install
-%{__make} install DESTDIR=$RPM_BUILD_ROOT %{?mflags_install}
+cd %{dname}
+%{__make} install DESTDIR=$RPM_BUILD_ROOT
 
 %{__mkdir} -p $RPM_BUILD_ROOT/%{_docdir}
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
-
 %files
-%defattr(-,root,root)
-%{FSP_PUB}
-%doc AUTHORS COPYING ChangeLog INSTALL NEWS README TODO
+%{OHPC_PUB}
+%doc %{dname}/AUTHORS %{dname}/COPYING %{dname}/ChangeLog %{dname}/INSTALL %{dname}/NEWS %{dname}/README %{dname}/TODO
 %{wwpkgdir}/*
 %{_libexecdir}/warewulf/ipmitool
 %{perl_vendorlib}/Warewulf/Ipmi.pm
 %{perl_vendorlib}/Warewulf/Module/Cli/*
 
-
-%changelog
+%files -n %{pname}-initramfs-%{_arch}%{PROJ_DELIM}
+%{wwpkgdir}/initramfs/%{_arch}/capabilities/setup-ipmi

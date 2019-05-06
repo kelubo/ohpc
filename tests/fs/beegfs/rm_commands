@@ -1,0 +1,55 @@
+#!./common/bats/bin/bats
+# -*-sh-*-
+
+load ./common/test_helper_functions
+source ./common/functions || exit 1
+
+if [ -s ./common/TEST_ENV ];then
+    source ./common/TEST_ENV
+fi
+
+if [ -z $BEEGFS_TEST_PATH ];then
+    ERROR "BeeGFS Test Path not defined (BEEGFS_TEST_PATH)"
+    exit 1
+elif [ ! -d $BEEGFS_TEST_PATH ];then
+    ERROR "BeeGFS Test Path:$BEEGFS_TEST_PATH does not exist)"
+    exit 1
+else
+    export BEEGFS_TEST_PATH
+fi
+
+check_rms
+
+@test "[BeeGFS] beegfs-df - $BEEGFS_TEST_PATH (compute node)" {
+    run ssh c1 /usr/bin/beegfs-df $BEEGFS_TEST_PATH
+    assert_success
+}
+
+@test "[BeeGFS] beegfs-ctl --getentryinfo - $BEEGFS_TEST_PATH (compute node)" {
+    run ssh c1 beegfs-ctl --getentryinfo $BEEGFS_TEST_PATH
+    assert_success
+}
+
+@test "[BeeGFS] set target count=2 test - $BEEGFS_TEST_PATH (compute node)" {
+    local testdir="tempdir-$RANDOM"
+
+    run ssh c1 mkdir $BEEGFS_TEST_PATH/$testdir
+    assert_success
+
+    run ssh c1 beegfs-ctl --setpattern --numtargets=2 --chunksize=1m $BEEGFS_TEST_PATH/$testdir
+    assert_success
+
+    # Generate file in new directory
+    run ssh c1 echo "atest" > $BEEGFS_TEST_PATH/$testdir/afile
+    run ls $BEEGFS_TEST_PATH/$testdir/afile
+    assert_success
+
+    # verify correct stripe settings for file in directory
+    beegfs-ctl --getentryinfo  $BEEGFS_TEST_PATH/$testdir/afile |sed -n 7,8p  >& .cmd_output
+    run cat .cmd_output
+    assert_output "+ Chunksize: 1M
++ Number of storage targets: desired: 2; actual: 1"
+
+    rm -rf $BEEGFS_TEST_PATH/$testdir
+
+}

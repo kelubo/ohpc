@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,51 +8,37 @@
 #
 #----------------------------------------------------------------------------eh-
 
-%{!?_rel:%{expand:%%global _rel 0.r%(test "1686" != "0000" && echo "1686" || svnversion | sed 's/[^0-9].*$//' | grep '^[0-9][0-9]*$' || git svn find-rev `git show -s --pretty=format:%h` || echo 0000)}}
-
-%define wwpkgdir /srv/
-
-%include %{_sourcedir}/FSP_macros
+%include %{_sourcedir}/OHPC_macros
 
 %define pname warewulf-common
-%{!?PROJ_DELIM:%define PROJ_DELIM %{nil}}
+%define dname common
+%define wwpkgdir /srv/
 
 Name:    %{pname}%{PROJ_DELIM}
 Summary: A suite of tools for clustering
-Version: 3.6
-Release: %{_rel}%{?dist}
+Version: 3.8.1
+Release: 1%{?dist}
 License: US Dept. of Energy (BSD-like)
-Group:   fsp/provisioning
+Group:   %{PROJ_NAME}/provisioning
 URL:     http://warewulf.lbl.gov/
-Source0: %{pname}-%{version}.tar.gz
-Source1: FSP_macros
+Source0: https://github.com/warewulf/warewulf3/archive/3.8.1.tar.gz#/warewulf3-%{version}.tar.gz
+Patch1:  warewulf-common.bin-file.patch
+Patch2:  warewulf-common.dbinit.patch
+Patch3:  warewulf-common.mysql.r1978.patch
+Patch4:  warewulf-common.rhel_service.patch
 ExclusiveOS: linux
-DocDir: %{FSP_PUB}/doc/contrib
+BuildRequires: autoconf
+BuildRequires: automake
 Conflicts: warewulf <= 2.9
 # 06/14/14 karl.w.schulz@intel.com - SUSE does not allow files in /usr/lib64 for noarch package
-%if 0%{?sles_version} || 0%{?suse_version}
-BuildArch: x86_64
-%else
+%if 0%{!?sles_version} && 0%{!?suse_version}
 BuildArch: noarch
 %endif
-BuildRoot: %{?_tmppath}/%{pname}-%{version}-%{release}-root
-# 09/10/14 charles.r.baird@intel.com - patch to add SuSE as a system type
-Patch1: warewulf-common.system.patch
-# 09/10/14 charles.r.baird@intel.com - patch to add mariadb as a datastore
-Patch2: warewulf-common.mariadb.patch
-# 05/23/14 charles.r.baird@intel.com - alternate package names for SuSE
 %if 0%{?suse_version}
 Requires: mysql perl-DBD-mysql
 %else
-# 07/23/14 travis.post@intel.com - alternate package names for RHEL7
-%if 0%{?rhel_version} > 600 || 0%{?centos_version} > 600
 Requires: mariadb-server perl-DBD-MySQL
-%else
-%if 0%{?rhel_version} < 700 || 0%{?centos_version} < 700
-Requires: mysql-server perl-DBD-mysql
-BuildRequires: db4-utils
-%endif
-%endif
+Requires: perl-Term-ReadLine-Gnu
 %endif
 
 %description
@@ -64,17 +50,25 @@ supporting libs.
 
 
 %prep
-%setup -q -n %{pname}-%{version}
+%setup -q -n warewulf3-%{version}
+cd %{dname}
 %patch1 -p1
 %patch2 -p1
+%patch3 -p1
+%patch4 -p1
 
 
 %build
+cd %{dname}
+if [ ! -f configure ]; then
+    ./autogen.sh
+fi
 %configure --localstatedir=%{wwpkgdir}
 %{__make} %{?mflags}
 
 
 %install
+cd %{dname}
 %{__make} install DESTDIR=$RPM_BUILD_ROOT %{?mflags_install}
 
 %{__mkdir} -p $RPM_BUILD_ROOT/%{_docdir}
@@ -85,21 +79,23 @@ groupadd -r warewulf >/dev/null 2>&1 || :
 
 %post
 if [ $1 -eq 2 ] ; then
-    %{_bindir}/wwsh object canonicalize >/dev/null 2>&1 || :
+    %{_bindir}/wwsh object canonicalize -t node >/dev/null 2>&1 || :
+    %{_bindir}/wwsh object canonicalize -t file >/dev/null 2>&1 || :
 fi
-service mysqld start >/dev/null 2>&1 || :
-chkconfig mysqld on >/dev/null 2>&1 || :
 
-
-%clean
-rm -rf $RPM_BUILD_ROOT
+%if 0%{?suse_version}
+systemctl start mysql >/dev/null 2>&1 || :
+systemctl enable mysql >/dev/null 2>&1 || :
+%else
+systemctl start mariadb >/dev/null 2>&1 || :
+systemctl enable mariadb >/dev/null 2>&1 || :
+%endif
 
 
 %files
-%defattr(-, root, root)
-%{FSP_HOME}
-%{FSP_PUB}
-%doc AUTHORS COPYING ChangeLog INSTALL NEWS README TODO LICENSE
+%{_sysconfdir}/bash_completion.d/warewulf_completion
+%{OHPC_PUB}
+%doc %{dname}/AUTHORS %{dname}/COPYING %{dname}/ChangeLog %{dname}/INSTALL %{dname}/NEWS %{dname}/README %{dname}/TODO %{dname}/LICENSE
 %attr(0755, root, warewulf) %dir %{_sysconfdir}/warewulf/
 %attr(0755, root, warewulf) %dir %{_sysconfdir}/warewulf/defaults/
 %attr(0444, root, warewulf) %{_sysconfdir}/warewulf/functions
@@ -109,11 +105,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/*
 %{_datadir}/warewulf/
 %{_libexecdir}/warewulf/wwinit
+%{_mandir}/*
 %{perl_vendorlib}/*
 
 # 06/14/14 karl.w.schulz@intel.com - include required dir for SUSE
 %if 0%{?sles_version} || 0%{?suse_version}
 %dir %{_libexecdir}/warewulf/
 %endif
-
-%changelog

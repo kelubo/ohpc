@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -9,57 +9,25 @@
 #----------------------------------------------------------------------------eh-
 
 # Serial GSL library build that is dependent on compiler toolchain
-
-#-fsp-header-comp-begin----------------------------------------------
-
-%include %{_sourcedir}/FSP_macros
-
-# FSP convention: the default assumes the gnu compiler family;
-# however, this can be overridden by specifing the compiler_family
-# variable via rpmbuild or other mechanisms.
-
-%{!?compiler_family: %define compiler_family gnu}
-%{!?PROJ_DELIM:      %define PROJ_DELIM   %{nil}}
-
-# Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM}
-%if %{compiler_family} == gnu
-BuildRequires: gnu-compilers%{PROJ_DELIM}
-Requires:      gnu-compilers%{PROJ_DELIM}
-%endif
-%if %{compiler_family} == intel
-BuildRequires: gcc-c++ intel-compilers-devel%{PROJ_DELIM}
-Requires:      gcc-c++ intel-compilers-devel%{PROJ_DELIM}
-%if 0%{FSP_BUILD}
-BuildRequires: intel_licenses
-%endif
-%endif
-
-#-fsp-header-comp-end------------------------------------------------
+%define ohpc_compiler_dependent 1
+%include %{_sourcedir}/OHPC_macros
 
 # Base package name
 %define pname gsl
-%define PNAME %(echo %{pname} | tr [a-z] [A-Z])
 
 Summary:   GNU Scientific Library (GSL)
 Name:      %{pname}-%{compiler_family}%{PROJ_DELIM}
-Version:   1.16
-Release:   1
+Version:   2.5
+Release:   1%{?dist}
 License:   GPL
-Group:     fsp/serial-libs
+Group:     %{PROJ_NAME}/serial-libs
 URL:       http://www.gnu.org/software/gsl
-Source0:   %{pname}-%{version}.tar.gz
-Source1:   FSP_macros
-Source2:   FSP_setup_compiler
-BuildRoot: %{_tmppath}/%{pname}-%{version}-%{release}-root
-DocDir:    %{FSP_PUB}/doc/contrib
+Source0:   https://ftp.gnu.org/gnu/%{pname}/%{pname}-%{version}.tar.gz
 
 #!BuildIgnore: post-build-checks rpmlint-Factory
 
-%define debug_package %{nil}
-
 # Default library install path
-%define install_path %{FSP_LIBS}/%{compiler_family}/%{pname}/%version
+%define install_path %{OHPC_LIBS}/%{compiler_family}/%{pname}/%version
 
 %description
 
@@ -74,30 +42,27 @@ lends itself to being used in very high level languages (VHLLs).
 %setup -q -n %{pname}-%{version}
 
 %build
-# FSP compiler/mpi designation
-export FSP_COMPILER_FAMILY=%{compiler_family}
-. %{_sourcedir}/FSP_setup_compiler
+# OpenHPC compiler/mpi designation
+%ohpc_setup_compiler
 
 %if %{compiler_family} == intel
 export CFLAGS="-fp-model strict $CFLAGS"
 %endif
 
-./configure --prefix=%{install_path} --disable-static || cat config.log
+./configure --prefix=%{install_path} --disable-static || { cat config.log && exit 1; }
 make %{?_smp_mflags}
 
 %install
-# FSP compiler designation
-export FSP_COMPILER_FAMILY=%{compiler_family}
-. %{_sourcedir}/FSP_setup_compiler
-
+# OpenHPC compiler designation
+%ohpc_setup_compiler
 make %{?_smp_mflags} DESTDIR=$RPM_BUILD_ROOT install
 
 # Remove static libraries
 find "%buildroot" -type f -name "*.la" | xargs rm -f
 
-# FSP module file
-%{__mkdir} -p %{buildroot}%{FSP_MODULEDEPS}/%{compiler_family}/%{pname}
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}/%{pname}/%{version}
+# OpenHPC module file
+%{__mkdir} -p %{buildroot}%{OHPC_MODULEDEPS}/%{compiler_family}/%{pname}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}/%{pname}/%{version}
 #%Module1.0#####################################################################
 
 proc ModulesHelp { } {
@@ -126,7 +91,7 @@ setenv          %{PNAME}_INC        %{install_path}/include
 
 EOF
 
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}/%{pname}/.version.%{version}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}/%{pname}/.version.%{version}
 #%Module1.0#####################################################################
 ##
 ## version file for %{pname}-%{version}
@@ -134,16 +99,8 @@ EOF
 set     ModulesVersion      "%{version}"
 EOF
 
-%{__mkdir} -p %{RPM_BUILD_ROOT}/%{_docdir}
-
-%clean
-rm -rf $RPM_BUILD_ROOT
+%{__mkdir} -p %{buildroot}/%{_docdir}
 
 %files
-%defattr(-,root,root,-)
-%{FSP_HOME}
-
-%{FSP_PUB}
+%{OHPC_PUB}
 %doc AUTHORS BUGS ChangeLog COPYING INSTALL NEWS README THANKS TODO
-
-%changelog

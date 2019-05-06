@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,96 +8,35 @@
 #
 #----------------------------------------------------------------------------eh-
 
-#-------------------------------------------------------------------------------
-# Copyright (c) 2015 SUSE LINUX GmbH, Nuernberg, Germany.
-# Copyright (c) 2015, Intel Corporation
-#
-# All modifications and additions to the file contributed by third parties
-# remain the property of their copyright owners, unless otherwise agreed
-# upon. The license for this file, and modifications and additions to the
-# file, is the same license as for the pristine package itself (unless the
-# license for the pristine package is not an Open Source License, in which
-# case the license is the MIT License). An "Open Source License" is a
-# license that conforms to the Open Source Definition (Version 1.9)
-# published by the Open Source Initiative.
-#
-#
-#-------------------------------------------------------------------------------
-
-# Parallel HDF5 library build that is dependent on compiler
-# toolchain and MPI
-
-#-fsp-header-comp-begin----------------------------------------------
-
-%include %{_sourcedir}/FSP_macros
-
-# FSP convention: the default assumes the gnu toolchain and openmpi
-# MPI family; however, these can be overridden by specifing the
-# compiler_family and mpi_family variables via rpmbuild or other
-# mechanisms.
-
-%{!?compiler_family: %define compiler_family gnu}
-%{!?mpi_family: %define mpi_family openmpi}
-%{!?PROJ_DELIM:      %define PROJ_DELIM      %{nil}}
-
-# Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
-%if %{compiler_family} == gnu
-BuildRequires: gnu-compilers%{PROJ_DELIM} 
-Requires:      gnu-compilers%{PROJ_DELIM} 
-%endif
-%if %{compiler_family} == intel
-BuildRequires: gcc-c++ intel-compilers-devel%{PROJ_DELIM} 
-Requires:      gcc-c++ intel-compilers-devel%{PROJ_DELIM} 
-%if 0%{?FSP_BUILD}
-BuildRequires: intel_licenses
-%endif
-%endif
-
-# MPI dependencies
-%if %{mpi_family} == impi
-BuildRequires: intel-mpi-devel%{PROJ_DELIM}
-Requires:      intel-mpi-devel%{PROJ_DELIM}
-%endif
-%if %{mpi_family} == mvapich2
-BuildRequires: mvapich2-%{compiler_family}%{PROJ_DELIM}
-Requires:      mvapich2-%{compiler_family}%{PROJ_DELIM}
-%endif
-%if %{mpi_family} == openmpi
-BuildRequires: openmpi-%{compiler_family}%{PROJ_DELIM}
-Requires:      openmpi-%{compiler_family}%{PROJ_DELIM}
-%endif
-
-#-fsp-header-comp-end------------------------------------------------
+# Build that is dependent on compiler/mpi toolchains
+%define ohpc_compiler_dependent 1
+%define ohpc_mpi_dependent 1
+%include %{_sourcedir}/OHPC_macros
 
 %define _unpackaged_files_terminate_build 0
 
 # Base package name
 %define pname hdf5
-%define PNAME %(echo %{pname} | tr [a-z] [A-Z])
 
 Summary:   A general purpose library and file format for storing scientific data
 Name:      p%{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
-Version:   1.8.14
-Release:   1
-License:   BSD-style
-Group:     fsp/io-libs
+Version:   1.10.4
+Release:   1%{?dist}
+License:   Hierarchical Data Format (HDF) Software Library and Utilities License
+Group:     %{PROJ_NAME}/io-libs
 URL:       http://www.hdfgroup.org/HDF5
-DocDir:    %{FSP_PUB}/doc/contrib
 
-Source0:   %{pname}-%{version}.tar.gz
-Source1:   FSP_macros
-Source2:   FSP_setup_compiler
-Source3:   FSP_setup_mpi
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+Source0:   https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/%{pname}-%{version}/src/%{pname}-%{version}.tar.bz2
+Patch0:    h5cc.patch
+Patch1:    h5fc.patch
+Patch2:    h5cxx.patch
+
 BuildRequires: zlib-devel
 
 #!BuildIgnore: post-build-checks rpmlint-Factory
 
-%define debug_package %{nil}
-
 # Default library install path
-%define install_path %{FSP_LIBS}/%{compiler_family}/%{mpi_family}/%{pname}/%version
+%define install_path %{OHPC_LIBS}/%{compiler_family}/%{mpi_family}/%{pname}/%version
 
 %description
 HDF5 is a general purpose library and file format for storing scientific data.
@@ -111,37 +50,47 @@ grids. You can also mix and match them in HDF5 files according to your needs.
 %prep
 
 %setup -q -n %{pname}-%{version}
+%patch0 -p0
+%patch1 -p0
+%patch2 -p0
+
+# Fix building with gcc8 (this should be a patch)
+sed "s/\(.*\)(void) HDF_NO_UBSAN/HDF_NO_UBSAN \1(void)/" -i src/H5detect.c
 
 %build
 
-# FSP compiler/mpi designation
-export FSP_COMPILER_FAMILY=%{compiler_family}
-export FSP_MPI_FAMILY=%{mpi_family}
-. %{_sourcedir}/FSP_setup_compiler
-. %{_sourcedir}/FSP_setup_mpi
+# override with newer config.guess for aarch64
+%ifarch aarch64 || ppc64le
+cp /usr/lib/rpm/config.guess bin
+%endif
 
-export CC=mpicc 
-export CXX=mpicxx 
-export F77=mpif77 
-export FC=mpif90 
-export MPICC=mpicc 
-export MPIFC=mpifc 
-export MPICXX=mpicxx 
+# OpenHPC compiler/mpi designation
+%ohpc_setup_compiler
+
+export CC=mpicc
+export CXX=mpicxx
+export F77=mpif77
+export FC=mpif90
+export MPICC=mpicc
+export MPIFC=mpifc
+export MPICXX=mpicxx
 
 ./configure --prefix=%{install_path} \
 	    --enable-fortran         \
             --enable-static=no       \
             --enable-parallel        \
 	    --enable-shared          \
-	    --enable-fortran2003    || cat config.log
+	    --enable-fortran2003     || { cat config.log && exit 1; }
+
+%if "%{compiler_family}" == "llvm" || "%{compiler_family}" == "arm"
+%{__sed} -i -e 's#wl=""#wl="-Wl,"#g' libtool
+%{__sed} -i -e 's#pic_flag=""#pic_flag=" -fPIC -DPIC"#g' libtool
+%endif
 
 %install
 
-# FSP compiler designation
-export FSP_COMPILER_FAMILY=%{compiler_family}
-export FSP_MPI_FAMILY=%{mpi_family}
-. %{_sourcedir}/FSP_setup_compiler
-. %{_sourcedir}/FSP_setup_mpi
+# OpenHPC compiler designation
+%ohpc_setup_compiler
 
 export NO_BRP_CHECK_RPATH=true
 
@@ -150,9 +99,9 @@ make %{?_smp_mflags} DESTDIR=$RPM_BUILD_ROOT install
 # Remove static libraries
 find "%buildroot" -type f -name "*.la" | xargs rm -f
 
-# FSP module file
-%{__mkdir_p} %{buildroot}%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/p%{pname}
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/p%{pname}/%{version}
+# OpenHPC module file
+%{__mkdir_p} %{buildroot}%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/p%{pname}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/p%{pname}/%{version}
 #%Module1.0#####################################################################
 
 proc ModulesHelp { } {
@@ -183,7 +132,7 @@ setenv          %{PNAME}_INC        %{install_path}/include
 family "hdf5"
 EOF
 
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/p%{pname}/.version.%{version}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/p%{pname}/.version.%{version}
 #%Module1.0#####################################################################
 ##
 ## version file for %{pname}-%{version}
@@ -193,16 +142,7 @@ EOF
 
 %{__mkdir_p} ${RPM_BUILD_ROOT}/%{_docdir}
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
 %files
-%defattr(-,root,root,-)
-%{FSP_HOME}
-%{FSP_PUB}
+%{OHPC_PUB}
 %doc COPYING
 %doc README.txt
-
-%changelog
-
-

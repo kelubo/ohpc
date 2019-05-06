@@ -73,7 +73,7 @@ FL = mpif77
 AR = ar vr 
 #RANLIB = ranlib
 RANLIB  = echo
-SCALAP  = -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -Wl,--start-group -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -Wl,--end-group -openmp -lpthread -lm
+SCALAP  = -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -Wl,--start-group -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -Wl,--end-group -qopenmp -lpthread -lm
 INCPAR = -I$(MPI_DIR)/include -I${MKLROOT}/include
 # LIBPAR = $(SCALAP)  -L/usr/local/lib/ -llamf77mpi -lmpi -llam
 LIBPAR = $(SCALAP)  -L$(MPI_DIR)/lib -lmpi 
@@ -81,13 +81,13 @@ LIBPAR = $(SCALAP)  -L$(MPI_DIR)/lib -lmpi
 INCSEQ = -I$(topdir)/libseq
 LIBSEQ  =  -L$(topdir)/libseq -lmpiseq
 #LIBBLAS = -L/usr/lib/xmm/ -lf77blas -latlas
-LIBBLAS = -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -Wl,--start-group -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -Wl,--end-group -openmp -lpthread -lm
+LIBBLAS = -L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -Wl,--start-group -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 -Wl,--end-group -qopenmp -lpthread -lm
 LIBOTHERS = -lpthread
 #Preprocessor defs for calling Fortran from C (-DAdd_ or -DAdd__ or -DUPPER)
 CDEFS   = -DAdd_
 
 #Begin Optimized options
-OPTF    = -O  -DALLOW_NON_INIT -nofor_main
+OPTF    = -O  -DALLOW_NON_INIT -nofor_main -diag-warning 5286
 OPTL    = -O -nofor_main
 OPTC    = -O
 #End Optimized options

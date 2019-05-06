@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,28 +8,30 @@
 #
 #----------------------------------------------------------------------------eh-
 
-%include %{_sourcedir}/FSP_macros
+%include %{_sourcedir}/OHPC_macros
 
 %define pname autoconf
-%{!?PROJ_DELIM:%define PROJ_DELIM %{nil}}
 
 Summary:   A GNU tool for automatically configuring source code
 Name:      %{pname}%{PROJ_DELIM}
 Version:   2.69
-Release:   1
-License:   GPLv3+ and GFDL
-Group:     fsp/dev-tools
-DocDir:    %{FSP_PUB}/doc/contrib
+Release:   1%{?dist}
+License:   GNU GPL
+Group:     %{PROJ_NAME}/dev-tools
 URL:       http://www.gnu.org/software/autoconf/
-Source0:   autoconf-%{version}.tar.gz
-Source1:   FSP_macros
-BuildRoot: %{_tmppath}/%{pname}-%{version}-%{release}-root
+Source0:   https://ftp.gnu.org/gnu/autoconf/autoconf-%{version}.tar.gz
 
 Requires: m4
 
-%define debug_package %{nil}
-%{!?FSP_PUB: %define FSP_PUB /opt/fsp/pub}
-%define install_path %{FSP_PUB}/autotools
+%if 0%{?rhel_version} || 0%{?centos_version} || 0%{?rhel}
+BuildRequires: m4
+BuildRequires: perl-macros
+BuildRequires: perl(Data::Dumper)
+# from f19, Text::ParseWords is not the part of 'perl' package
+BuildRequires: perl(Text::ParseWords)
+%endif
+
+%define install_path %{OHPC_UTILS}/autotools
 
 %description
 GNU Autoconf is a tool for configuring source code and Makefiles.
@@ -51,6 +53,10 @@ their use.
 %setup -n autoconf-%{version}
 
 %build
+%ifarch ppc64le
+cp /usr/lib/rpm/config.guess build-aux
+%endif
+
 ./configure --prefix=%{install_path}
 
 %install
@@ -61,13 +67,9 @@ rm -f $RPM_BUILD_ROOT/%{install_path}/share/info/dir
 
 %{__mkdir_p} ${RPM_BUILD_ROOT}/%{_docdir}
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
 %files
-%defattr(-,root,root,-)
-%dir %{FSP_HOME}
-%{FSP_PUB}
+%dir %{OHPC_HOME}
+%{OHPC_UTILS}
 %doc THANKS
 %doc NEWS
 %doc ChangeLog.2
@@ -81,9 +83,3 @@ rm -rf $RPM_BUILD_ROOT
 %doc ChangeLog.1
 %doc TODO
 %doc COPYING.EXCEPTION
-
-
-%changelog
-* Mon Sep 15 2014  <karl.w.schulz@intel.com> - 
-- Initial build.
-

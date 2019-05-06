@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,110 +8,64 @@
 #
 #----------------------------------------------------------------------------eh-
 
-# petsc library that is is dependent on compiler toolchain and MPI
+# PETSc library that is is dependent on compiler toolchain and MPI
+%define ohpc_compiler_dependent 1
+%define ohpc_mpi_dependent 1
+%include %{_sourcedir}/OHPC_macros
 
-#-fsp-header-comp-begin-----------------------------
-
-%include %{_sourcedir}/FSP_macros
-
-# FSP convention: the default assumes the gnu toolchain and openmpi
-# MPI family; however, these can be overridden by specifing the
-# compiler_family and mpi_family variables via rpmbuild or other
-# mechanisms.
-
-%{!?compiler_family: %define compiler_family gnu}
-%{!?mpi_family: %define mpi_family openmpi}
-%{!?PROJ_DELIM:      %define PROJ_DELIM      %{nil}}
-
-# Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
-%if %{compiler_family} == gnu
-BuildRequires: gnu-compilers%{PROJ_DELIM}
-Requires:      gnu-compilers%{PROJ_DELIM}
-# require Intel runtime for MKL
-BuildRequires: intel-compilers%{PROJ_DELIM}
-Requires:      intel-compilers%{PROJ_DELIM}
+%if "%{compiler_family}" != "intel"
+BuildRequires: scalapack-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
+Requires:      scalapack-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 %endif
-%if %{compiler_family} == intel
-BuildRequires: gcc-c++ intel-compilers-devel%{PROJ_DELIM}
-Requires:      gcc-c++ intel-compilers-devel%{PROJ_DELIM}
-%if 0%{?FSP_BUILD}
-BuildRequires: intel_licenses
-%endif
-%endif
-
-# MPI dependencies
-%if %{mpi_family} == impi
-BuildRequires: intel-mpi-devel%{PROJ_DELIM}
-Requires:      intel-mpi-devel%{PROJ_DELIM}
-%endif
-%if %{mpi_family} == mvapich2
-BuildRequires: mvapich2-%{compiler_family}%{PROJ_DELIM}
-Requires:      mvapich2-%{compiler_family}%{PROJ_DELIM}
-%endif
-%if %{mpi_family} == openmpi
-BuildRequires: openmpi-%{compiler_family}%{PROJ_DELIM}
-Requires:      openmpi-%{compiler_family}%{PROJ_DELIM}
-%endif
-
-#-fsp-header-comp-end-------------------------------
 
 # Base package name
 %define pname petsc
-%define PNAME %(echo %{pname} | tr [a-z] [A-Z])
 
 Name:           %{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 Summary:        Portable Extensible Toolkit for Scientific Computation
-License:        MIT
-Group:          fsp/parallel-libs
-Version:        3.5.3
-Release:        0
-
-Source0:        %{pname}-%{version}.tar.gz
-Source1:        FSP_macros
-Source2:        FSP_setup_compiler
-Source3:        FSP_setup_mpi
+License:        2-clause BSD
+Group:          %{PROJ_NAME}/parallel-libs
+Version:        3.10.3
+Release:        1%{?dist}
+Source0:        http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-%{version}.tar.gz
 Patch1:         petsc.rpath.patch
-Patch2:         petsc.usrlocal.patch
-Url:            http://www-unix.mcs.anl.gov/petsc/petsc-as/
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-DocDir:         %{FSP_PUB}/doc/contrib
+Url:            http://www.mcs.anl.gov/petsc/
+Requires:       lmod%{PROJ_DELIM} >= 7.6.1
 BuildRequires:  phdf5-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
+Requires:       phdf5-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 BuildRequires:  python
 BuildRequires:  valgrind%{PROJ_DELIM}
 BuildRequires:  xz
 BuildRequires:  zlib-devel
 
-%include %{_sourcedir}/FSP_macros
 #!BuildIgnore: post-build-checks
-%define debug_package %{nil}
 
 # Default library install path
-%define install_path %{FSP_LIBS}/%{compiler_family}/%{mpi_family}/%{pname}/%version
+%define install_path %{OHPC_LIBS}/%{compiler_family}/%{mpi_family}/%{pname}/%version
 
 %description
 PETSc is a suite of data structures and routines for the scalable
-(parallel) solution of scientific applications modeled by partial 
+(parallel) solution of scientific applications modeled by partial
 differential equations.
 
 %prep
 %setup -q -n %{pname}-%{version}
 %patch1 -p1
-%patch2 -p1
 
 
 %build
-# FSP compiler/mpi designation
-export FSP_COMPILER_FAMILY=%{compiler_family}
-export FSP_MPI_FAMILY=%{mpi_family}
-. %{_sourcedir}/FSP_setup_compiler
-. %{_sourcedir}/FSP_setup_mpi
+# OpenHPC compiler/mpi designation
+%ohpc_setup_compiler
 
 module load phdf5
 
-# Enable MKL linkage for blas/lapack with gnu builds
-%if %{compiler_family} == gnu
-module load mkl
+%if "%{compiler_family}" == "arm"
+module load scalapack
+%endif
+
+# Enable scalapack and openblas linkage for blas/lapack with gnu and other (e.g. llvm) builds
+%if "%{compiler_family}" != "intel" && "%{compiler_family}" != "arm"
+module load scalapack openblas
 %endif
 
 # icc-impi requires mpiicc wrappers, otherwise dynamic libs are not generated.
@@ -120,8 +74,22 @@ module load mkl
         --prefix=%{install_path} \
 %if %{compiler_family} == intel
         --FFLAGS="-fPIC" \
-%endif
         --with-blas-lapack-dir=$MKLROOT/lib/intel64 \
+%else
+%if %{compiler_family} == arm
+        --CFLAGS="-fPIC -DPIC" \
+        --CXXFLAGS="-fPIC -DPIC" \
+        --FFLAGS="-fPIC" \
+        --with-blas-lapack-lib=$ARMPL_LIBRARIES/libarmpl.so \
+        --with-scalapack-dir=$SCALAPACK_DIR \
+%else
+        --CFLAGS="-fPIC -DPIC" \
+        --CXXFLAGS="-fPIC -DPIC" \
+        --FFLAGS="-fPIC" \
+        --with-blas-lapack-lib=$OPENBLAS_LIB/libopenblas.so \
+        --with-scalapack-dir=$SCALAPACK_DIR \
+%endif
+%endif
 %if %{mpi_family} == impi
 %if %{compiler_family} == intel
         --with-cc=mpiicc    \
@@ -129,7 +97,9 @@ module load mkl
         --with-fc=mpiifort  \
         --with-f77=mpiifort \
 %else
+%if "%{compiler_family}" == "gnu"
         --FFLAGS=-I$I_MPI_ROOT/include64/gfortran/4.9.0/ \
+%endif
 %endif
 %endif
         --with-clanguage=C++ \
@@ -147,19 +117,14 @@ make
 
 %install
 
-make install DESTDIR=$RPM_BUILD_ROOT/%{install_path}
-
-# remove buildroot
-for f in $RPM_BUILD_ROOT%{install_path}/conf/*; do
-    sed -i -e 's!%{buildroot}!!g' $f
-done
+make install DESTDIR=$RPM_BUILD_ROOT
 
 # remove stock module file
-rm -rf $RPM_BUILDROOT%{install_path}/lib/modules
+rm -rf %{buildroot}%{install_path}/lib/modules
 
-# FSP module file
-%{__mkdir} -p %{buildroot}%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/%{version}
+# OpenHPC module file
+%{__mkdir} -p %{buildroot}%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/%{version}
 #%Module1.0#####################################################################
 
 proc ModulesHelp { } {
@@ -168,8 +133,6 @@ puts stderr " "
 puts stderr "This module loads the PETSc library built with the %{compiler_family} compiler"
 puts stderr "toolchain and the %{mpi_family} MPI stack."
 puts stderr " "
-puts stderr "Note that this build of PETSc leverages the Intel MKL and parallel HDF libraries."
-puts stderr "Consequently, these packages are loaded automatically with this module."
 
 puts stderr "\nVersion %{version}\n"
 
@@ -182,23 +145,15 @@ module-whatis "%{url}"
 
 set     version                     %{version}
 
-# Require phdf5 (and mkl for gnu compiler families)
-
-if [ expr [ module-info mode load ] || [module-info mode display ] ] {
-    if {  ![is-loaded phdf5]  } {
-        module load phdf5
-    }
-    if { [is-loaded gnu] } {
-        if { ![is-loaded mkl]  } {
-          module load mkl
-        }
-    }
-}
+# Require phdf5 (and scalapack for compiler families other than intel)
+depends-on phdf5
+%if "%{compiler_family}" != "intel"
+depends-on scalapack
+%endif
 
 prepend-path    PATH                %{install_path}/bin
 prepend-path    INCLUDE             %{install_path}/include
 prepend-path    LD_LIBRARY_PATH     %{install_path}/lib
-prepend-path    LD_LIBRARY_PATH     %{MKLROOT}/lib/intel64
 
 setenv          %{PNAME}_DIR        %{install_path}
 setenv          %{PNAME}_BIN        %{install_path}/bin
@@ -207,7 +162,7 @@ setenv          %{PNAME}_LIB        %{install_path}/lib
 
 EOF
 
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/.version.%{version}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/.version.%{version}
 #%Module1.0#####################################################################
 ##
 ## version file for %{pname}-%{version}
@@ -217,17 +172,7 @@ EOF
 
 %{__mkdir} -p $RPM_BUILD_ROOT/%{_docdir}
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
-%post -p /sbin/ldconfig
-%postun -p /sbin/ldconfig
-
-
 %files
-%defattr(-,root,root,-)
-%{FSP_HOME}
-%{FSP_PUB}
+%{OHPC_PUB}
 %doc CONTRIBUTING LICENSE
 
-%changelog

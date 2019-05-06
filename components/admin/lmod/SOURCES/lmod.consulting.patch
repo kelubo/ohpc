@@ -1,12 +1,10 @@
---- Lmod-5.8/src/MasterControl.lua	2014-11-04 10:46:44.000000000 -0800
-+++ Lmod-5.8.patch/src/MasterControl.lua	2014-11-19 13:08:14.098359300 -0800
-@@ -1018,8 +1018,7 @@
-          LmodError("You can only have one ",name," module loaded at a time.\n",
-                    "You already have ", oldName," loaded.\n",
-                    "To correct the situation, please enter the following command:\n\n",
--                   "  module swap ",oldName, " ", mFull,"\n\n",
--                   "Please submit a consulting ticket if you require additional assistance.\n")
-+                   "  module swap ",oldName, " ", mFull,"\n")
-       end
-    end
-    mt:setfamily(name,sn)
+--- a/messageDir/en.lua	2017-11-16 15:23:41.000000000 -0800
++++ b/messageDir/en.lua	2018-01-16 10:00:36.000000000 -0800
+@@ -111,7 +111,6 @@
+ 
+   $  module swap %{oldName} %{fullName}
+ 
+-Please submit a consulting ticket if you require additional assistance.
+ ]==],
+      e_Illegal_Load       = [==[The following module(s) are illegal: %{module_list}
+ Lmod does not support modulefiles that start with two or more underscores

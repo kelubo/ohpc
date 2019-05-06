@@ -1,0 +1,30 @@
+#!../common/bats/bin/bats
+# -*-sh-*-
+
+load ./common/test_helper_functions || exit 1
+source ./common/functions || exit 1
+
+if [ -s ./common/TEST_ENV ];then
+    source ./common/TEST_ENV
+fi
+
+@test "[ganglia] check for RPMs" {
+    run check_if_rpm_installed "ganglia${DELIM}"
+    assert_success
+    run check_if_rpm_installed "ganglia-devel${DELIM}"
+    assert_success
+    run check_if_rpm_installed "ganglia-gmetad${DELIM}"
+    assert_success
+    run check_if_rpm_installed "ganglia-gmond${DELIM}"
+    assert_success
+    run check_if_rpm_installed "ganglia-gmond-python${DELIM}"
+    assert_success
+    run check_if_rpm_installed "ganglia-web${DELIM}"
+    assert_success
+}
+
+@test "[ganglia] start and check gmond" {
+    systemctl start gmond
+    run systemctl status gmond
+    assert_success
+}

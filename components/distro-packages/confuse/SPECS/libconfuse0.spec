@@ -1,30 +1,18 @@
+#----------------------------------------------------------------------------bh-
+# This RPM .spec file is part of the OpenHPC project.
 #
-# spec file for package libconfuse0
+# It may have been modified from the default version supplied by the underlying
+# release package (if available) in order to apply patches, perform customized
+# build/install configurations, and supply additional files to support
+# desired integration conventions.
 #
-# Copyright (c) 2011 SUSE LINUX Products GmbH, Nuernberg, Germany.
-#
-# All modifications and additions to the file contributed by third parties
-# remain the property of their copyright owners, unless otherwise agreed
-# upon. The license for this file, and modifications and additions to the
-# file, is the same license as for the pristine package itself (unless the
-# license for the pristine package is not an Open Source License, in which
-# case the license is the MIT License). An "Open Source License" is a
-# license that conforms to the Open Source Definition (Version 1.9)
-# published by the Open Source Initiative.
-
-# Please submit bugfixes or comments via http://bugs.opensuse.org/
-#
-
-%include %{_sourcedir}/FSP_macros
-%{!?PROJ_DELIM:      %define PROJ_DELIM      %{nil}}
+#----------------------------------------------------------------------------eh-
 
 Name:           libconfuse0
 Version:        2.7
 Release:        1
 License:        LGPL-2.1+
 Group:          Development/Libraries/C and C++
-DocDir:         %{FSP_PUB}/doc/contrib
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  gcc-c++ gettext-devel libtool pkgconfig
 %if 0%{?suse_version} > 1020
 BuildRequires:  check-devel
@@ -33,11 +21,10 @@ Recommends:     %{name}-lang
 BuildRequires:  check
 %endif
 %define pkg_name confuse
-%define debug_package %{nil}
 #
 URL:            http://www.nongnu.org/confuse/
 # taken from    http://download.savannah.gnu.org/releases/confuse/%{pkg_name}-%{version}.tar.gz
-Source:         %{pkg_name}-%{version}.tar.gz
+Source:         http://savannah.nongnu.org/download/confuse/confuse-%{version}.tar.gz 
 #
 Summary:        A configuration file parser library
 
@@ -93,31 +80,21 @@ autoreconf -fi
 # clean up examples
 %{__make} -C examples clean
 rm -rf examples/.deps/ examples/Makefile*
-%{__mkdir_p} ${RPM_BUILD_ROOT}/%{_docdir}
 
 %post   -p /sbin/ldconfig
 
 %postun -p /sbin/ldconfig
 
 %files
-%defattr(-,root,root,-)
 %{_libdir}/libconfuse.so.0.0.0
 %{_libdir}/libconfuse.so.0
 
 %files -n libconfuse-devel
-%defattr(-,root,root,-)
 %{_libdir}/libconfuse.so
 %{_libdir}/libconfuse.la
 %{_libdir}/pkgconfig/libconfuse.pc
 %{_includedir}/confuse.h
 %{_mandir}/man3/*.3*
 %{_datadir}/
-%doc NEWS
-%doc README
-%doc AUTHORS
 %doc doc/html/ doc/tutorial-html/ examples/
-%{FSP_PUB}
-%{FSP_HOME}
 
-
-%changelog

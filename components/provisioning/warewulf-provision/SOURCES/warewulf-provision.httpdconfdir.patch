@@ -1,14 +1,13 @@
---- warewulf-provision-3.5/configure	2014-02-07 15:39:40.000000000 -0800
-+++ warewulf-provision-3.5.patch/configure	2014-06-26 14:41:02.000000000 -0700
-@@ -2372,7 +2372,10 @@
+--- a/configure.ac	2018-07-11 13:56:05.000000000 -0700
++++ b/configure.ac	2018-07-11 20:55:42.000000000 -0700
+@@ -35,7 +35,9 @@
  
- { $as_echo "$as_me:$LINENO: checking for Debian based system" >&5
- $as_echo_n "checking for Debian based system... " >&6; }
-- if test -f /etc/debian_version; then
-+if test -f /etc/debian_version; then
-+  ISDEB_TRUE=
-+  ISDEB_FALSE='#'
-+elif test -f /etc/SuSE-release; then
-   ISDEB_TRUE=
-   ISDEB_FALSE='#'
- else
+ 
+ AC_MSG_CHECKING([for Debian based system])
+-AM_CONDITIONAL(ISDEB, [test -f /etc/debian_version])
++AS_IF([test -f /etc/debian_version], [deblike=yes],
++    [test -f /etc/SuSE-release], [deblike=yes])
++AM_CONDITIONAL(ISDEB, [test "x$deblike" = "xyes"])
+ 
+ AC_PATH_PROG(PERLBIN, perl)
+ if test -z "$PERLBIN"; then

@@ -1,0 +1,43 @@
+#!/bin/bash
+# -*-sh-*-
+
+TEST_LOGS=""
+MAKEFLAGS=""
+status=0
+
+source ./common/TEST_ENV  || exit 1
+source ./common/functions || exit 1
+
+cd dev-tools/mpi4py || exit 1
+export BATS_JUNIT_CLASS=mpi4py
+
+for compiler in $COMPILER_FAMILIES ; do
+
+    for mpi in $MPI_FAMILIES ; do
+        for python in $PYTHON_FAMILIES ; do
+
+            get_python_vars $python
+
+            echo " "
+            echo " "
+            echo "-------------------------------------------------------"
+            echo "Dev Tools: $python-mpi4py tests: $compiler-$mpi"
+            echo "-------------------------------------------------------"
+
+            module purge                             || exit 1
+            module load prun                         || exit 1
+            module load $compiler                    || exit 1
+            module load $mpi                         || exit 1
+            module load $python_module_prefix-mpi4py || exit 1
+
+            make clean                               || exit 1
+            make -k check                            || status=1
+
+            save_logs_mpi_family tests $python-$compiler $mpi    
+
+	        make clean
+        done
+    done
+done
+
+exit ${status}

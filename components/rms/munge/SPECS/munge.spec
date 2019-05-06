@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,26 +8,28 @@
 #
 #----------------------------------------------------------------------------eh-
 
-%include %{_sourcedir}/FSP_macros
+%include %{_sourcedir}/OHPC_macros
 
 %define pname munge
-%{!?PROJ_DELIM:%define PROJ_DELIM %{nil}}
-%define debug_package %{nil}
+
 
 Name:           %{pname}%{PROJ_DELIM}
-Version:	0.5.11
+Version:	0.5.13
 Release:	1%{?dist}
 
 Summary:	MUNGE authentication service
-Group:		fsp/rms
+Group:		%{PROJ_NAME}/rms
 License:	GPLv3+ and LGPLv3+
-URL:		https://munge.googlecode.com/
+URL:		http://dun.github.io/munge/
 Requires:	%{pname}-libs%{PROJ_DELIM} = %{version}-%{release}
 
 %if 0%{?suse_version} >= 1100
 BuildRequires:	libbz2-devel
 BuildRequires:	libopenssl-devel
 BuildRequires:	zlib-devel
+%if 0%{?suse_version} >= 1230
+BuildRequires:	systemd
+%endif
 %else
 %if 0%{?sles_version} || 0%{?suse_version}
 BuildRequires:	bzip2
@@ -37,22 +39,22 @@ BuildRequires:	zlib-devel
 BuildRequires:	bzip2-devel
 BuildRequires:	openssl-devel
 BuildRequires:	zlib-devel
+BuildRequires:	systemd
 %endif
 %endif
-BuildRoot:	%{_tmppath}/%{pname}-%{version}
-DocDir:     %{FSP_PUB}/doc/contrib
-BuildConflicts: post-build-checks
+#!BuildIgnore: post-build-checks
 
 Conflicts: munge 
 
-Source0:	%{pname}-%{version}.tar.bz2
-Source1:   FSP_macros
+Source0:   https://github.com/dun/munge/archive/munge-%{version}.tar.gz
 # 6/12/14 karl.w.schulz@intel.com - logdir patch for use with Warewulf
 Patch1:     %{pname}.logdir.patch
 # 6/12/14 karl.w.schulz@intel.com - define default runlevel
 Patch2:     %{pname}.initd.patch
 # 11/10/14 karl.w.schulz@intel.com - enable systemd-based startup
 Patch3:     %{pname}.service.patch
+# 2019-03-11 janne.blomqvist@aalto.fi - Enable syslog
+Patch4:     %{pname}.syslog.patch
 
 %if 0%{?suse_version} >= 1230
 Requires(pre):	shadow
@@ -98,12 +100,13 @@ A header file and static library for developing applications using MUNGE.
 A shared library for applications using MUNGE.
 
 %prep
-%setup -n %{pname}-%{version}
+%setup -n %{pname}-%{pname}-%{version}
 
-# Intel FSP patches
+# OpenHPC patches
 %patch1
 %patch2
 %patch3
+%patch4
 
 %build
 ##
@@ -129,23 +132,20 @@ touch "$RPM_BUILD_ROOT"/%{_localstatedir}/run/munge/munged.pid
 %if 0%{?suse_version} >= 1230
 rm "$RPM_BUILD_ROOT"/etc/init.d/munge
 %endif
-%if 0%{?rhel_version} > 600 || 0%{?centos_version} > 600
+%if 0%{?rhel_version} > 600 || 0%{?centos_version} > 600 || 0%{?rhel}
 rm "$RPM_BUILD_ROOT"/etc/rc.d/init.d/munge
 %endif
 
 %{__mkdir} -p $RPM_BUILD_ROOT/%{_docdir}
 
-%clean
-rm -rf "$RPM_BUILD_ROOT"
-
 %pre
 # karl.w.schulz@intel.com (9/10/18) - provide specific uid/gid to deal with 
 # possibility of getting alternate ownership within Warewulf
 /usr/bin/getent group munge >/dev/null 2>&1 || \
-  /usr/sbin/groupadd -r munge -g 200
+  /usr/sbin/groupadd -r munge -o -g 201
 /usr/bin/getent passwd munge >/dev/null 2>&1 || \
   /usr/sbin/useradd -c "MUNGE authentication service" \
-  -d "%{_sysconfdir}/munge" -g munge -s /bin/false -r munge -u 200
+  -d "%{_sysconfdir}/munge" -g munge -s /bin/false -o -r munge -u 201
 
 %post
 if [ ! -e %{_sysconfdir}/munge/munge.key -a -c /dev/urandom ]; then
@@ -167,7 +167,7 @@ if [ -f /var/lock/subsys/munged ]; then
   /bin/mv /var/lock/subsys/munged /var/lock/subsys/munge
 fi
 ##
-%if 0%{?suse_version} >= 1230 || 0%{?rhel_version} > 600 || 0%{?centos_version} > 600
+%if 0%{?suse_version} >= 1230 || 0%{?rhel_version} > 600 || 0%{?centos_version} > 600 || 0%{?rhel}
    /bin/systemctl enable munge.service >/dev/null 2>&1 || :
 %else
    if [ -x /sbin/chkconfig ]; then /sbin/chkconfig --add munge; fi
@@ -178,7 +178,7 @@ fi
 
 %preun
 if [ $1 -eq 0 ]; then
-   %if 0%{?suse_version} >= 1230 || 0%{?rhel_version} > 600 || 0%{?centos_version} > 600
+   %if 0%{?suse_version} >= 1230 || 0%{?rhel_version} > 600 || 0%{?centos_version} > 600 || 0%{?rhel}
    /bin/systemctl disable munge.service >/dev/null 2>&1 || :
    /bin/systemctl stop munge.service >/dev/null 2>&1 || :
    %else
@@ -189,7 +189,7 @@ fi
 
 %postun
 if [ $1 -ge 1 ]; then
-   %if 0%{?suse_version} >= 1230 || 0%{?rhel_version} > 600 || 0%{?centos_version} > 600
+   %if 0%{?suse_version} >= 1230 || 0%{?rhel_version} > 600 || 0%{?centos_version} > 600 || 0%{?rhel}
       service munge condrestart  >/dev/null 2>&1 || :
    %else
       %{_sysconfdir}/init.d/munge try-restart >/dev/null 2>&1 || :
@@ -200,7 +200,6 @@ fi
 /sbin/ldconfig %{_libdir}
 
 %files
-%defattr(-,root,root,0755)
 %doc AUTHORS
 %doc COPYING
 %doc DISCLAIMER*
@@ -217,8 +216,8 @@ fi
 %attr(0600,munge,munge) %config(noreplace) %ghost %{_sysconfdir}/munge/munge.key
 %config(noreplace) %{_sysconfdir}/sysconfig/munge
 
-# FSP mods - systemd 
-%if 0%{?suse_version} >= 1230 || 0%{?rhel_version} > 600 || 0%{?centos_version} > 600
+# OpenHPC mods - systemd 
+%if 0%{?suse_version} >= 1230 || 0%{?rhel_version} > 600 || 0%{?centos_version} > 600 || 0%{?rhel}
 %{_prefix}/lib/systemd/system/munge.service
 %else
 %{?_initddir:%{_initddir}}%{!?_initddir:%{_initrddir}}/munge
@@ -235,12 +234,11 @@ fi
 %{_mandir}/*[^3]/*
 
 
-%if 0%{?rhel_version} > 600 || 0%{?centos_version} > 600
+%if 0%{?suse_version} >= 1230 || 0%{?rhel_version} > 600 || 0%{?centos_version} > 600 || 0%{?rhel}
 %{_prefix}/lib/tmpfiles.d/munge.conf
 %endif
 
 %files -n %{pname}-devel%{PROJ_DELIM}
-%defattr(-,root,root,0755)
 %{_includedir}/*
 %{_libdir}/*.la
 %{_libdir}/pkgconfig/*.pc
@@ -249,5 +247,5 @@ fi
 %{_libdir}/*.so
 
 %files -n %{pname}-libs%{PROJ_DELIM}
-%defattr(-,root,root,0755)
 %{_libdir}/*.so.*
+

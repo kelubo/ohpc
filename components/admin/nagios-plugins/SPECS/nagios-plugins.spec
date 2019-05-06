@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -11,31 +11,28 @@
 # Turn off strip'ng of binaries
 # %global __strip /bin/true
 
-%include %{_sourcedir}/FSP_macros
-%{!?PROJ_DELIM:      %define PROJ_DELIM      %{nil}}
+%include %{_sourcedir}/OHPC_macros
 
 # Base package name
 %define pname nagios-plugins
-%define PNAME %(echo %{pname} | tr [a-z] [A-Z])
 
 %global _hardened_build 1
 
 Name: %{pname}%{PROJ_DELIM}
-Version: 2.0.1
+Version: 2.2.1
 Release: 1%{?dist}
 Summary: Host/service/network monitoring program plugins for Nagios
-DocDir:  %{FSP_PUB}/doc/contrib
-Group: fsp/admin
+Group: %{PROJ_NAME}/admin
 
-License: GPLv2+
+License: GPLv3
 URL: https://www.nagios-plugins.org/
-Source0: %{pname}-%{version}.tar.gz
+Source0: http://www.nagios-plugins.org/download/nagios-plugins-%{version}.tar.gz
 Source1: nagios-plugins.README.Fedora
 Patch2: nagios-plugins-0002-Remove-assignment-of-not-parsed-to-jitter.patch
-Patch3: nagios-plugins-0003-Fedora-specific-fixes-for-searching-for-diff-and-tai.patch
-Patch4: nagios-plugins-0004-Fedora-specific-patch-for-not-to-fixing-fully-qualif.patch
+# 3 & 4 appear to no longer be necessary in 2.1.1
+#Patch3: nagios-plugins-0003-Fedora-specific-fixes-for-searching-for-diff-and-tai.patch
+#Patch4: nagios-plugins-0004-Fedora-specific-patch-for-not-to-fixing-fully-qualif.patch
 # https://bugzilla.redhat.com/512559
-Patch5: nagios-plugins-0005-Prevent-check_swap-from-returning-OK-if-no-swap-acti.patch
 Patch7: nagios-plugins-0007-Fix-the-use-lib-statement-and-the-external-ntp-comma.patch
 
 %if 0%{?fedora} || 0%{?rhel}
@@ -58,11 +55,6 @@ BuildRequires: samba-client
 BuildRequires: postgresql-devel
 BuildRequires: gettext
 #BuildRequires: %{_bindir}/ssh
-%if 0%{?suse_version}
-BuildRequires: openssh
-%else
-BuildRequires: openssh-clients
-%endif
 BuildRequires: bind-utils
 BuildRequires: ntp
 #BuildRequires: %{_bindir}/mailq
@@ -112,7 +104,53 @@ contains those plugins.
 %package -n %{pname}-all%{PROJ_DELIM}
 Summary: Nagios Plugins - All plugins
 Group: Applications/System
-Requires: nagios-plugins-breeze, nagios-plugins-by_ssh, nagios-plugins-dhcp, nagios-plugins-dig, nagios-plugins-disk, nagios-plugins-disk_smb, nagios-plugins-dns, nagios-plugins-dummy, nagios-plugins-file_age, nagios-plugins-flexlm, nagios-plugins-fping, nagios-plugins-hpjd, nagios-plugins-http, nagios-plugins-icmp, nagios-plugins-ide_smart, nagios-plugins-ircd, nagios-plugins-ldap, nagios-plugins-load, nagios-plugins-log, nagios-plugins-mailq, nagios-plugins-mrtg, nagios-plugins-mrtgtraf, nagios-plugins-mysql, nagios-plugins-nagios, nagios-plugins-nt, nagios-plugins-ntp, nagios-plugins-ntp-perl, nagios-plugins-nwstat, nagios-plugins-oracle, nagios-plugins-overcr, nagios-plugins-pgsql, nagios-plugins-ping, nagios-plugins-procs, nagios-plugins-real, nagios-plugins-rpc, nagios-plugins-smtp, nagios-plugins-snmp, nagios-plugins-ssh, nagios-plugins-swap, nagios-plugins-tcp, nagios-plugins-time, nagios-plugins-ups, nagios-plugins-users, nagios-plugins-wave, nagios-plugins-cluster
+Requires:  nagios-plugins-by_ssh%{PROJ_DELIM}
+Requires:  nagios-plugins-cluster%{PROJ_DELIM}
+Requires:  nagios-plugins-dhcp%{PROJ_DELIM}
+Requires:  nagios-plugins-dig%{PROJ_DELIM}
+Requires:  nagios-plugins-disk%{PROJ_DELIM}
+Requires:  nagios-plugins-disk_smb%{PROJ_DELIM}
+Requires:  nagios-plugins-dns%{PROJ_DELIM}
+Requires:  nagios-plugins-dummy%{PROJ_DELIM}
+Requires:  nagios-plugins-file_age%{PROJ_DELIM}
+Requires:  nagios-plugins-flexlm%{PROJ_DELIM}
+Requires:  nagios-plugins-fping%{PROJ_DELIM}
+Requires:  nagios-plugins-hpjd%{PROJ_DELIM}
+Requires:  nagios-plugins-http%{PROJ_DELIM}
+Requires:  nagios-plugins-icmp%{PROJ_DELIM}
+Requires:  nagios-plugins-ide_smart%{PROJ_DELIM}
+Requires:  nagios-plugins-ircd%{PROJ_DELIM}
+Requires:  nagios-plugins-ldap%{PROJ_DELIM}
+Requires:  nagios-plugins-load%{PROJ_DELIM}
+Requires:  nagios-plugins-log%{PROJ_DELIM}
+Requires:  nagios-plugins-mailq%{PROJ_DELIM}
+Requires:  nagios-plugins-mrtg%{PROJ_DELIM}
+Requires:  nagios-plugins-mrtgtraf%{PROJ_DELIM}
+Requires:  nagios-plugins-mysql%{PROJ_DELIM}
+Requires:  nagios-plugins-nagios%{PROJ_DELIM}
+# NRPE plugin comes from the nrpe build, but it is a plugin so including it here
+Requires:  nagios-plugins-nrpe%{PROJ_DELIM}
+# The perl version of these plugins are iffy -- we're not build this one, so don't include
+#Requires:  nagios-plugins-ntp-perl%{PROJ_DELIM}
+Requires:  nagios-plugins-ntp%{PROJ_DELIM}
+Requires:  nagios-plugins-nt%{PROJ_DELIM}
+Requires:  nagios-plugins-nwstat%{PROJ_DELIM}
+Requires:  nagios-plugins-oracle%{PROJ_DELIM}
+Requires:  nagios-plugins-overcr%{PROJ_DELIM}
+Requires:  nagios-plugins-pgsql%{PROJ_DELIM}
+Requires:  nagios-plugins-ping%{PROJ_DELIM}
+Requires:  nagios-plugins-procs%{PROJ_DELIM}
+Requires:  nagios-plugins-real%{PROJ_DELIM}
+Requires:  nagios-plugins-rpc%{PROJ_DELIM}
+Requires:  nagios-plugins-smtp%{PROJ_DELIM}
+Requires:  nagios-plugins-snmp%{PROJ_DELIM}
+Requires:  nagios-plugins-ssh%{PROJ_DELIM}
+Requires:  nagios-plugins-swap%{PROJ_DELIM}
+Requires:  nagios-plugins-tcp%{PROJ_DELIM}
+Requires:  nagios-plugins-time%{PROJ_DELIM}
+Requires:  nagios-plugins-ups%{PROJ_DELIM}
+Requires:  nagios-plugins-users%{PROJ_DELIM}
+Requires:  nagios-plugins-wave%{PROJ_DELIM}
 %if 0%{?fedora} > 14 || 0%{?rhel} > 6
 Requires: nagios-plugins-game
 %endif
@@ -147,7 +185,11 @@ Summary: Nagios Plugin - check_by_ssh
 Group: Applications/System
 Requires: %{name} = %{version}-%{release}
 #Requires: %{_bindir}/ssh
-Requires: openssh-clients
+%if 0%{?suse_version}
+BuildRequires: openssh
+%else
+BuildRequires: openssh-clients
+%endif
 Provides: %{pname}-by_ssh
 
 %description -n %{pname}-by_ssh%{PROJ_DELIM}
@@ -246,6 +288,7 @@ Summary: Nagios Plugin - check_flexlm
 Group: Applications/System
 Requires: %{name} = %{version}-%{release}
 Provides: %{pname}-flexlm
+AutoReq: no
 
 %description -n %{pname}-flexlm%{PROJ_DELIM}
 Provides check_flexlm support for Nagios.
@@ -320,6 +363,7 @@ Summary: Nagios Plugin - check_ifoperstatus
 Group: Applications/System
 Requires: %{name} = %{version}-%{release}
 Provides: %{pname}-ifoperstatus
+AutoReq: no
 
 %description -n %{pname}-ifoperstatus%{PROJ_DELIM}
 Provides check_ifoperstatus support for Nagios to monitor network interfaces.
@@ -329,6 +373,7 @@ Summary: Nagios Plugin - check_ifstatus
 Group: Applications/System
 Requires: %{name} = %{version}-%{release}
 Provides: %{pname}-ifstatus
+AutoReq: no
 
 %description -n %{pname}-ifstatus%{PROJ_DELIM}
 Provides check_ifstatus support for Nagios to monitor network interfaces.
@@ -435,16 +480,17 @@ Provides: %{pname}-ntp
 %description -n %{pname}-ntp%{PROJ_DELIM}
 Provides check_ntp support for Nagios.
 
-%package -n %{pname}-ntp-perl%{PROJ_DELIM}
-Summary: Nagios Plugin - check_ntp.pl
-Group: Applications/System
-Requires: %{name} = %{version}-%{release}
-Requires: %{_sbindir}/ntpdate
-Requires: %{_sbindir}/ntpq
-Provides: %{pname}-ntp-perl
-
-%description -n %{pname}-ntp-perl%{PROJ_DELIM}
-Provides check_ntp.pl support for Nagios.
+# perl scripts aren't getting substitutions done in 2.1.1, Makefile issue?
+#%package -n %{pname}-ntp-perl%{PROJ_DELIM}
+#Summary: Nagios Plugin - check_ntp.pl
+#Group: Applications/System
+#Requires: %{name} = %{version}-%{release}
+#Requires: %{_sbindir}/ntpdate
+#Requires: %{_sbindir}/ntpq
+#Provides: %{pname}-ntp-perl
+#
+#%description -n %{pname}-ntp-perl%{PROJ_DELIM}
+#Provides check_ntp.pl support for Nagios.
 
 %package -n %{pname}-nwstat%{PROJ_DELIM}
 Summary: Nagios Plugin - check_nwstat
@@ -535,8 +581,15 @@ Provides check_real (rtsp) support for Nagios.
 Summary: Nagios Plugin - check_rpc
 Group: Applications/System
 Requires: %{name} = %{version}-%{release}
-Requires: %{_sbindir}/rpcinfo
+#%if 0%{?fedora} || 0%{?rhel}
+#Requires: %{_sbindir}/rpcinfo
+#%else
+#Requires: /sbin/rpcinfo
+#%endif
+Requires: perl
+Requires: rpcbind
 Provides: %{pname}-rpc
+AutoReq: no
 
 %description -n %{pname}-rpc%{PROJ_DELIM}
 Provides check_rpc support for Nagios.
@@ -578,6 +631,11 @@ Provides check_snmp support for Nagios.
 Summary: Nagios Plugin - check_ssh
 Group: Applications/System
 Requires: %{name} = %{version}-%{release}
+%if 0%{?suse_version}
+BuildRequires: openssh
+%else
+BuildRequires: openssh-clients
+%endif
 Provides: %{pname}-ssh
 
 %description -n %{pname}-ssh%{PROJ_DELIM}
@@ -664,9 +722,8 @@ Provides check_wave support for Nagios.
 %setup -q -n %{pname}-%{version}
 
 %patch2 -p1 -b .not_parsed
-%patch3 -p1 -b .proper_paths
-%patch4 -p1 -b .no_need_fo_fix_paths
-%patch5 -p1 -b .fix_missing_swap
+#%patch3 -p1 -b .proper_paths
+#%patch4 -p1 -b .no_need_fo_fix_paths
 %patch7 -p1 -b .ext_ntp_cmds
 
 
@@ -705,8 +762,9 @@ make check_pgsql
 
 cd ..
 
-mv plugins-scripts/check_ntp.pl plugins-scripts/check_ntp.pl.in
-gawk -f plugins-scripts/subst plugins-scripts/check_ntp.pl.in > plugins-scripts/check_ntp.pl
+# perl scripts aren't getting substitutions done in 2.1.1, Makefile issue?
+#mv plugins-scripts/check_ntp.pl plugins-scripts/check_ntp.pl.in
+#gawk -f plugins-scripts/subst plugins-scripts/check_ntp.pl.in > plugins-scripts/check_ntp.pl
 
 cp %{SOURCE1} ./README.Fedora
 
@@ -717,7 +775,8 @@ install -m 0755 plugins-root/check_icmp %{buildroot}/%{_libdir}/nagios/plugins
 install -m 0755 plugins-root/check_dhcp %{buildroot}/%{_libdir}/nagios/plugins
 install -m 0755 plugins/check_ide_smart %{buildroot}/%{_libdir}/nagios/plugins
 install -m 0755 plugins/check_ldap %{buildroot}/%{_libdir}/nagios/plugins
-install -m 0755 plugins-scripts/check_ntp.pl %{buildroot}/%{_libdir}/nagios/plugins
+# perl scripts aren't getting substitutions done in 2.1.1, Makefile issue?
+#install -m 0755 plugins-scripts/check_ntp.pl %{buildroot}/%{_libdir}/nagios/plugins
 %if 0%{?fedora} || 0%{?rhel}
 install -m 0755 plugins/check_radius %{buildroot}/%{_libdir}/nagios/plugins
 %endif
@@ -861,8 +920,9 @@ chmod 644 %{buildroot}/%{_libdir}/nagios/plugins/utils.pm
 %{_libdir}/nagios/plugins/check_ntp_peer
 %{_libdir}/nagios/plugins/check_ntp_time
 
-%files -n %{pname}-ntp-perl%{PROJ_DELIM}
-%{_libdir}/nagios/plugins/check_ntp.pl
+# perl scripts aren't getting substitutions done in 2.1.1, Makefile issue?
+#%files -n %{pname}-ntp-perl%{PROJ_DELIM}
+#%{_libdir}/nagios/plugins/check_ntp.pl
 
 %files -n %{pname}-nwstat%{PROJ_DELIM}
 %{_libdir}/nagios/plugins/check_nwstat
@@ -941,308 +1001,3 @@ chmod 644 %{buildroot}/%{_libdir}/nagios/plugins/utils.pm
 
 %files -n %{pname}-wave%{PROJ_DELIM}
 %{_libdir}/nagios/plugins/check_wave
-
-%changelog
-* Thu May 1 2014 Sam Kottler <skottler@fedoraproject.org> - 2.0.1-1
-- Update to 2.0.1
-- Moved SSD-specific patch which landed upstream
-- Update patch to binary paths in plugins-scripts/check_log.sh so it applies
-- Add -uptime subpackage
-
-* Thu Oct 24 2013 Jose Pedro Oliveira <jpo at di.uminho.pt> - 1.5-2
-- New check_dbi plugin (BR: libdbi-devel; subpackage: nagios-plugins-dbi)
-
-* Wed Oct 23 2013 Jose Pedro Oliveira <jpo at di.uminho.pt> - 1.5-1
-- Update to version 1.5
-- New project homepage and source download locations
-- Disabled patches 1, 6, 8, and 9.
-- No linux_raid subpackage (the contrib directory was removed)
-
-* Wed Oct 16 2013 Peter Lemenkov <lemenkov@gmail.com> - 1.4.16-10
-- Remove EL4 and EL5 support
-- Backport patches to fix check_linux_raid in case of resyncing (rhbz #504721)
-- Fix smart attribute comparison (rhbz #913085)
-
-* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.4.16-9
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
-
-* Sun Jul 21 2013 Petr Pisar <ppisar@redhat.com> - 1.4.16-8
-- Perl 5.18 rebuild
-
-* Wed May 22 2013 Jose Pedro Oliveira <jpo at di.uminho.pt> - 1.4.16-7
-- Build package with PIE flags (#965536)
-
-* Thu Feb 14 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.4.16-6
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
-
-* Fri Aug 17 2012 Jose Pedro Oliveira <jpo at di.uminho.pt> - 1.4.16-5
-- Fix the use lib statement and the external ntp commands paths in check-ntp.pl
-  (nagios-plugins-0008-ntpdate-and-ntpq-paths.patch).
-
-* Thu Aug 16 2012 Jose Pedro Oliveira <jpo at di.uminho.pt> - 1.4.16-4
-- Remove the erroneous requirements of nagios-plugins-ntp (#848830)
-- Ship check-ntp.pl in the new nagios-plugins-ntp-perl subpackage (#848830)
-
-* Fri Jul 20 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.4.16-3
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
-
-* Mon Jul  9 2012 Jose Pedro Oliveira <jpo at di.uminho.pt> - 1.4.16-2
-- Provides bundled(gnulib) (#821779)
-
-* Mon Jul  9 2012 Jose Pedro Oliveira <jpo at di.uminho.pt> - 1.4.16-1
-- Update to version 1.4.16
-- Dropped nagios-plugins-0005-Patch-for-check_linux_raid-with-on-linear-raid0-arra.patch
-  (upstream).
-
-* Tue Jun 26 2012 Jose Pedro Oliveira <jpo at di.uminho.pt> - 1.4.15-7
-- glibc 2.16 no longer defines gets for ISO C11, ISO C++11, and _GNU_SOURCE
-  (#835621): nagios-plugins-0007-undef-gets-and-glibc-2.16.patch
-
-* Tue Jun 26 2012 Jose Pedro Oliveira <jpo at di.uminho.pt> - 1.4.15-6
-- The nagios-plugins RPM no longer needs to own the /usr/lib{,64}/nagios/plugins
-  directory; this directory is now owned by nagios-common (#835621)
-- Small updates (clarification) to the file nagios-plugins.README.Fedora
-
-* Fri Jan 13 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.4.15-5
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
-
-* Wed Mar 23 2011 Dan Horák <dan@danny.cz> - 1.4.15-4
-- rebuilt for mysql 5.5.10 (soname bump in libmysqlclient)
-
-* Tue Feb 08 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.4.15-3
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
-
-* Thu Oct  7 2010 Peter Lemenkov <lemenkov@gmail.com> - 1.4.15-2
-- Dropped check_udp sub-package (see rhbz #634067). Anyway it
-  provided just a symlink to check_tcp.
-- Fixed weird issue with check_swap returning ok in case of
-  missing swap (see rhbz #512559).
-
-* Wed Aug 18 2010 Peter Lemenkov <lemenkov@gmail.com> - 1.4.15-1
-- Ver. 1.4.15
-- Dropped patch for restoration of behaviour in case of ssl checks
-
-* Tue May 18 2010 Peter Lemenkov <lemenkov@gmail.com> - 1.4.14-4
-- Restore ssl behaviour for check_http in case of self-signed
-  certificates (see rhbz #584227).
-
-* Sat Apr 24 2010 Peter Lemenkov <lemenkov@gmail.com> - 1.4.14-3
-- Removed Requires - nagios (see rhbz #469530).
-- Added "Requires,Requires(pre): group(nagios)" where necessary
-- Sorted %%files sections
-- No need to ship INSTALL file
-- Added more doc files to main package
-
-* Mon Apr 12 2010 Peter Lemenkov <lemenkov@gmail.com> - 1.4.14-2
-- Added missing Requires - nagios (see rhbz #469530).
-- Fixed path to qstat -> quakestat (see rhbz #533777)
-- Disable radius plugin for EL4 - there is not radiuscleint-ng for EL-4
-
-* Wed Mar 10 2010 Peter Lemenkov <lemenkov@gmail.com> - 1.4.14-1
-- Ver. 1.4.14
-- Rebased patches.
-
-* Fri Aug 21 2009 Tomas Mraz <tmraz@redhat.com> - 1.4.13-17
-- rebuilt with new openssl
-
-* Sat Jul 25 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.4.13-16
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
-
-* Mon Jun 22 2009 Mike McGrath <mmcgrath@redhat.com> - 1.4.13-15
-- Added patch from upstream to fix ntp faults (bz #479030)
-
-* Wed Feb 25 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.4.13-14
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_11_Mass_Rebuild
-
-* Sat Jan 24 2009 Caolán McNamara <caolanm@redhat.com> 1.4.13-13
-- rebuild for dependencies
-
-* Sat Jan 17 2009 Tomas Mraz <tmraz@redhat.com> 1.4.13-12
-- rebuild with new openssl
-
-* Mon Oct 20 2008 Robert M. Albrecht <romal@gmx.de> 1.4.13-11
-- Enabled --with-extra-opts again
-
-* Mon Oct 20 2008 Robert M. Albrecht <romal@gmx.de> 1.4.13-10
-- removed provides perl plugins Bugzilla 457404
-
-* Thu Oct 16 2008 Mike McGrath <mmcgrath@redhat.com> 1.4.13-9
-- This is a "CVS is horrible" rebuild
-
-* Thu Oct  9 2008 Mike McGrath <mmcgrath@redhat.com> 1.4.13-8
-- Rebuilt with a proper patch
-
-* Wed Oct  8 2008 Mike McGrath <mmcgrath@redhat.com> 1.4.13-7
-- Added changed recent permission changes to allow nagios group to execute
-
-* Wed Oct  8 2008 Mike McGrath <mmcgrath@redhat.com> 1.4.13-6
-- Fixed up some permission issues
-
-* Mon Oct  6 2008 Mike McGrath <mmcgrath@redhat.com> 1.4.13-5
-- Fixing patch, missing semicolon
-
-* Sun Sep 28 2008 Mike McGrath <mmcgrath@redhat.com> 1.4.13-4
-- Upstream released new version #464419
-- Added patch fix for check_linux_raid #253898
-- Upstream releases fix for #451015 - check_ntp_peers
-- Upstream released fix for #459309 - check_ntp
-- Added Provides Nagios::Plugins for #457404
-- Fixed configure line for #458985 check_procs
-
-* Thu Jul 10 2008 Robert M. Albrecht <romal@gmx.de> 1.4.12-3
-- Removed --with-extra-opts, does not build in Koji
-
-* Mon Jun 30 2008 Robert M. Albrecht <romal@gmx.de> 1.4.12-2
-- Enabled --with-extra-opts
-
-* Sun Jun 29 2008 Robert M. Albrecht <romal@gmx.de> 1.4.12-1
-- Upstream released version 1.4.12
-- Removed patches ping_timeout.patch and pgsql-fix.patch
-
-* Wed Apr 30 2008 Mike McGrath <mmcgrath@redhat.com> 1.4.11-4
-- added patch for check_pgsql
-
-* Wed Apr 09 2008 Mike McGrath <mmcgrath@redhat.com> 1.4.11-2
-- Fix for 250588
-
-* Thu Feb 28 2008 Mike McGrath <mmcgrath@redhat.com> 1.4.11-1
-- Upstream released version 1.4.11
-- Added check_ntp peer and time
-
-* Tue Feb 19 2008 Fedora Release Engineering <rel-eng@fedoraproject.org> - 1.4.10-6
-- Autorebuild for GCC 4.3
-
-* Tue Feb 12 2008 Mike McGrath <mmcgrath@redhat.com> 1.4-10-5
-- Rebuild for gcc43
-
-* Thu Jan 10 2008 Mike McGrath <mmcgrath@redhat.com> 1.4.10-4
-- Fixed check_log plugin #395601
-
-* Thu Dec 06 2007 Release Engineering <rel-eng at fedoraproject dot org> - 1.4.10-2
-- Rebuild for deps
-
-* Thu Dec 06 2007 Mike McGrath <mmcgrath@redhat.com> 1.4.10-1
-- Upstream released new version
-- Removed some patches
-
-* Fri Oct 26 2007 Mike McGrath <mmcgrath@redhat.com> 1.4.8-9
-- Fix for Bug 348731 and CVE-2007-5623
-
-* Wed Aug 22 2007 Mike McGrath <mmcgrath@redhat.com> 1.4.8-7
-- Rebuild for BuildID
-- License change
-
-* Fri Aug 10 2007 Mike McGrath <mmcgrath@redhat.com> 1.4.8-6
-- Fix for check_linux_raid - #234416
-- Fix for check_ide_disk - #251635
-
-* Tue Aug 07 2007 Mike McGrath <mmcgrath@redhat.com> 1.4.8-2
-- Fix for check_smtp - #251049
-
-* Fri Apr 13 2007 Mike McGrath <mmcgrath@redhat.com> 1.4.8-1
-- Upstream released new version
-
-* Fri Feb 23 2007 Mike McGrath <mmcgrath@redhat.com> 1.4.6-1
-- Upstream released new version
-
-* Sun Dec 17 2006 Mike McGrath <imlinux@gmail.com> 1.4.5-1
-- Upstream released new version
-
-* Fri Oct 27 2006 Mike McGrath <imlinux@gmail.com> 1.4.4-2
-- Enabled check_smart_ide
-- Added patch for linux_raid
-- Fixed permissions on check_icmp
-
-* Tue Oct 24 2006 Mike McGrath <imlinux@gmail.com> 1.4.4-1
-- Upstream new version
-- Disabled check_ide_smart (does not compile cleanly/too lazy to fix right now)
-- Added check_apt
-
-* Sun Aug 27 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-18
-- Removed utils.pm from the base nagios-plugins package into its own package
-
-* Tue Aug 15 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-17
-- Added requires qstat for check_game
-
-* Thu Aug 03 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-16
-- Providing path to qstat
-
-* Thu Aug 03 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-15
-- Fixed permissions on check_dhcp
-- Added check_game
-- Added check_radius
-- Added patch for ntp
-
-* Sun Jul 23 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-14
-- Patched upstream issue: 196356
-
-* Sun Jul 23 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-13
-- nagios-plugins-all now includes nagios-plugins-mysql
-
-* Thu Jun 22 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-12
-- removed sensors support for sparc and sparc64
-
-* Thu Jun 22 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-11
-- Created a README.Fedora explaining how to install other plugins
-
-* Sun Jun 11 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-9
-- Removed check_sensors in install section
-
-* Sat Jun 10 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-8
-- Inserted conditional blocks for ppc exception.
-
-* Wed Jun 07 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-7
-- Removed sensors from all plugins and added excludearch: ppc
-
-* Tue Jun 06 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-6
-- For ntp plugins requires s/ntpc/ntpdc/
-
-* Sat Jun 03 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-5
-- Fixed a few syntax errors and removed an empty export
-
-* Fri May 19 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-4
-- Now using configure macro instead of ./configure
-- Added BuildRequest: perl(Net::SNMP)
-- For reference, this was bugzilla.redhat.com ticket# 176374
-
-* Fri May 19 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-3
-- Added check_ide_smart
-- Added some dependencies
-- Added support for check_if* (perl-Net-SNMP now in extras)
-- nagios-plugins now owns dir %%{_libdir}/nagios
-
-* Sat May 13 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-2
-- Added a number of requires that don't get auto-detected
-
-* Sun May 07 2006 Mike McGrath <imlinux@gmail.com> 1.4.3-1
-- Upstream remeased 1.4.3
-
-* Tue Apr 18 2006 Mike McGrath <imlinux@gmail.com> 1.4.2-9
-- Fixed a typo where nagios-plugins-all required nagios-plugins-httpd
-
-* Mon Mar 27 2006 Mike McGrath <imlinux@gmail.com> 1.4.2-8
-- Updated to CVS head for better MySQL support
-
-* Sun Mar 5 2006 Mike McGrath <imlinux@gmail.com> 1.4.2-7
-- Added a nagios-plugins-all package
-
-* Wed Feb 1 2006 Mike McGrath <imlinux@gmail.com> 1.4.2-6
-- Added provides for check_tcp
-
-* Mon Jan 30 2006 Mike McGrath <imlinux@gmail.com> 1.4.2-5
-- Created individual packages for all check_* scripts
-
-* Tue Dec 20 2005 Mike McGrath <imlinux@gmail.com> 1.4.2-4
-- Fedora friendly spec file
-
-* Mon May 23 2005 Sean Finney <seanius@seanius.net> - cvs head
-- just include the nagios plugins directory, which will automatically include
-  all generated plugins (which keeps the build from failing on systems that
-  don't have all build-dependencies for every plugin)
-
-* Thu Mar 04 2004 Karl DeBisschop <karl[AT]debisschop.net> - 1.4.0alpha1
-- extensive rewrite to facilitate processing into various distro-compatible specs
-
-* Thu Mar 04 2004 Karl DeBisschop <karl[AT]debisschop.net> - 1.4.0alpha1
-- extensive rewrite to facilitate processing into various distro-compatible specs
-

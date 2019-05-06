@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,98 +8,61 @@
 #
 #----------------------------------------------------------------------------eh-
 
-#-fsp-header-comp-begin----------------------------------------------
+# Build that is dependent on compiler/mpi toolchains
+%define ohpc_compiler_dependent 1
+%define ohpc_mpi_dependent 1
+%define ohpc_python_dependent 1
+%global python_family python2
+%include %{_sourcedir}/OHPC_macros
 
-%include %{_sourcedir}/FSP_macros
-
-# FSP convention: the default assumes the gnu compiler family;
-# however, this can be overridden by specifing the compiler_family
-# variable via rpmbuild or other mechanisms.
-
-%{!?compiler_family: %define compiler_family gnu}
-%{!?mpi_family: %define mpi_family openmpi}
-%{!?PROJ_DELIM:      %define PROJ_DELIM   %{nil}}
-
-# Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM}
-%if %{compiler_family} == gnu
-BuildRequires: gnu-compilers%{PROJ_DELIM}
-Requires:      gnu-compilers%{PROJ_DELIM}
-%endif
-%if %{compiler_family} == intel
-BuildRequires: gcc-c++ intel-compilers-devel%{PROJ_DELIM}
-Requires:      gcc-c++ intel-compilers-devel%{PROJ_DELIM}
-%if 0%{FSP_BUILD}
-BuildRequires: intel_licenses
-%endif
-%endif
-
-# MPI dependencies
-%if %{mpi_family} == impi
-BuildRequires: intel-mpi-devel%{PROJ_DELIM}
-Requires:      intel-mpi-devel%{PROJ_DELIM}
-%endif
-%if %{mpi_family} == mvapich2
-BuildRequires: mvapich2-%{compiler_family}%{PROJ_DELIM}
-Requires:      mvapich2-%{compiler_family}%{PROJ_DELIM}
-%endif
-%if %{mpi_family} == openmpi
-BuildRequires: openmpi-%{compiler_family}%{PROJ_DELIM}
-Requires:      openmpi-%{compiler_family}%{PROJ_DELIM}
-%endif
-
-#-fsp-header-comp-end------------------------------------------------
-
-# not generating a debug package, CentOS build breaks without this if no debug package defined
-%define debug_package %{nil}
-
-%define somver 0
-%define sover %somver.0.0
+%{!?with_lustre: %global with_lustre 0}
 
 # Base package name
 %define pname adios
-%define PNAME %(echo %{pname} | tr [a-z] [A-Z])
 
 Summary: The Adaptable IO System (ADIOS)
 Name:    %{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
-Version: 1.8.0
-Release: 1
+Version: 1.13.1
+Release: 1%{?dist}
 License: BSD-3-Clause
-Group:   fsp/io-libs
-DocDir:  %{FSP_PUB}/doc/contrib
+Group:   %{PROJ_NAME}/io-libs
 Url:     http://www.olcf.ornl.gov/center-projects/adios/
-Source0: %{pname}-%{version}.tar.gz
-Source1: FSP_macros
-Source2: FSP_setup_compiler
+Source0: http://users.nccs.gov/~pnorbert/adios-%{version}.tar.gz
+Patch1:  adios-return-value.patch
+AutoReq: no
 
-# Minimum Build Requires
-BuildRequires: libmxml1 cmake zlib-devel glib2-devel
+BuildRequires: zlib-devel glib2-devel
+Requires:      zlib zlib-devel
 
 # libm.a from CMakeLists
 BuildRequires: glibc-static
 
+BuildRequires: libtool%{PROJ_DELIM}
+Requires:      lmod%{PROJ_DELIM} >= 7.6.1
 BuildRequires: phdf5-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 Requires:      phdf5-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 
 BuildRequires: netcdf-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 Requires:      netcdf-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
-#BuildRequires: libmpe2-devel
-#BuildRequires: python-modules-xml
-BuildRequires: python-devel
-#BuildRequires: bzlib-devel
-#BuildRequires: libsz2-devel
+
+%if 0%{with_lustre}
 # This is the legacy name for lustre-lite
 # BuildRequires: liblustre-devel
 BuildRequires: lustre-lite
-BuildRequires: python-numpy-%{compiler_family}%{PROJ_DELIM}
+Requires: lustre-client%{PROJ_DELIM}
+%endif
+BuildRequires: %{python_prefix}-numpy-%{compiler_family}%{PROJ_DELIM}
+
 
 %if 0%{?sles_version} || 0%{?suse_version}
 # define fdupes, clean up rpmlint errors
-BuildRequires: fdupes
+BuildRequires: fdupes libcurl4 libcurl-devel
+%else
+BuildRequires: libcurl libcurl-devel
 %endif
 
 # Default library install path
-%define install_path %{FSP_LIBS}/%{compiler_family}/%{mpi_family}/%{pname}/%version
+%define install_path %{OHPC_LIBS}/%{compiler_family}/%{mpi_family}/%{pname}/%version
 
 %description
 The Adaptable IO System (ADIOS) provides a simple, flexible way for
@@ -112,6 +75,7 @@ how they process the data.
 
 %prep
 %setup -q -n %{pname}-%{version}
+%patch1 -p1
 
 %build
 sed -i 's|@BUILDROOT@|%buildroot|' wrappers/numpy/setup*
@@ -120,28 +84,20 @@ LIBSUFF=64
 %endif
 sed -i "s|@64@|$LIBSUFF|" wrappers/numpy/setup*
 
-pushd /home/abuild/rpmbuild/SOURCES
-cp -p adios.spec %{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}.spec
-popd
+# OpenHPC compiler/mpi designation
+%ohpc_setup_compiler
 
-# FSP compiler/mpi designation
-export FSP_COMPILER_FAMILY=%{compiler_family}
-export FSP_MPI_FAMILY=%{mpi_family}
-. %{_sourcedir}/FSP_setup_compiler
-. %{_sourcedir}/FSP_setup_mpi
-%if %{compiler_family} == intel
-export CFLAGS="-fp-model strict $CFLAGS"
-%endif
-
+module load autotools
 module load phdf5
 module load netcdf
+module load %{python_module_prefix}numpy
 
 TOPDIR=$PWD
 
 export CFLAGS="-fPIC -I$TOPDIR/src/public -I$MPI_DIR/include -I$NETCDF_INC -I$HDF5_INC -pthread -lpthread -L$NETCDF_LIB -lnetcdf -L$HDF5_LIB"
 
 # These lines break intel builds, but are required for gnu mvapich2
-%if %{compiler_family} == gnu
+%if "%{compiler_family}" != "intel"
 export LDFLAGS="-L$NETCDF_LIB -L$HDF5_LIB"
 export LIBS="-pthread -lpthread -lnetcdf"
 %endif
@@ -154,15 +110,33 @@ export MPICC=mpicc
 export MPIFC=mpif90
 export MPICXX=mpicxx
 
-%if %{compiler_family} == intel
+%if "%{compiler_family}" == "intel"
 export CFLAGS="-fp-model strict $CFLAGS"
 %endif
+
+# work around old config.guess on aarch64 systems
+%ifarch aarch64
+cp /usr/lib/rpm/config.guess config
+%endif
+
 ./configure --prefix=%{install_path} \
-	--with-mxml=/usr/include \
-	--with-lustre=/usr/include/lustre \
-	--with-phdf5="$HDF5_DIR" \
-	--with-zlib=/usr/include \
-	--with-netcdf="$NETCDF_DIR" || cat config.log
+    --enable-shared=yes \
+    --enable-static=no \
+%if 0%{with_lustre}
+    --with-lustre=/usr/include/lustre \
+%endif
+    --with-phdf5="$HDF5_DIR" \
+    --with-zlib=/usr \
+    --without-atl \
+    --without-cercs_env \
+    --without-dill \
+    --without-evpath \
+    --without-fastbit \
+    --without-ffs \
+    --with-netcdf="$NETCDF_DIR" || { cat config.log && exit 1; }
+# bzip2 support is confusing CMtests
+    #	--with-bzip2=/usr \
+    #    --with-mxml=/usr \
 
 # modify libtool script to not hardcode library paths
 sed -i -r -e 's/(hardcode_into_libs)=.*$/\1=no/' \
@@ -177,33 +151,27 @@ make VERBOSE=1
 chmod +x adios_config
 
 %install
-# FSP compiler designation
-export FSP_COMPILER_FAMILY=%{compiler_family}
-export FSP_MPI_FAMILY=%{mpi_family}
-. %{_sourcedir}/FSP_setup_compiler
-. %{_sourcedir}/FSP_setup_mpi
+# OpenHPC compiler designation
+%ohpc_setup_compiler
+export NO_BRP_CHECK_RPATH=true
 
 make DESTDIR=$RPM_BUILD_ROOT install
 
-# gnu builds need MKL -- can this dependency be removed?
-%if %{compiler_family} == gnu
-module load mkl
-%endif
-
 # this is clearly generated someway and shouldn't be static
-export PPATH="/lib64/python2.7/site-packages"
+export PPATH="/lib64/%{python_lib_dir}/site-packages"
 export PATH=$(pwd):$PATH
 
-module load numpy
-export CFLAGS="-I%buildroot%{install_path}/include -I$NUMPY_DIR$PPATH/numpy/core/include -I$(pwd)/src/public -L$(pwd)/src"
+%if "%{compiler_family}" != "intel" && "%{compiler_family}" != "arm"
+module load openblas
+%endif
+module load %{python_module_prefix}numpy
+export CFLAGS="-I$NUMPY_DIR$PPATH/numpy/core/include -I$(pwd)/src/public -L$(pwd)/src"
 pushd wrappers/numpy
 make MPI=y python
+
+#%{python_prefix} setup.py install --prefix="%buildroot%{install_path}/python"
 python setup.py install --prefix="%buildroot%{install_path}/python"
 popd
-
-%if 0%{?rhel_version} || 0%{?centos_version}
-	find $RPM_BUILD_ROOT -type f -exec sed -i "s|$RPM_BUILD_ROOT||g" {} \;
-%endif
 
 install -m644 utils/skel/lib/skel_suite.py \
 	utils/skel/lib/skel_template.py \
@@ -220,10 +188,11 @@ install -d %buildroot%{install_path}/lib
 cp -fR examples %buildroot%{install_path}/lib
 
 mv %buildroot%{install_path}/lib/python/*.py %buildroot%{install_path}/python
+find %buildroot%{install_path}/python -name \*pyc -exec sed -i "s|$RPM_BUILD_ROOT||g" {} \;
 
-# FSP module file
-%{__mkdir} -p %{buildroot}%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/%{version}
+# OpenHPC module file
+%{__mkdir} -p %{buildroot}%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/%{version}
 #%Module1.0#####################################################################
 
 proc ModulesHelp { } {
@@ -242,10 +211,12 @@ module-whatis "%{url}"
 
 set             version             %{version}
 
+depends-on phdf5
+
 prepend-path    PATH                %{install_path}/bin
 prepend-path    INCLUDE             %{install_path}/include
 prepend-path    LD_LIBRARY_PATH     %{install_path}/lib
-prepend-path	PYTHONPATH          %{install_path}/python/lib64/python2.7/site-packages
+prepend-path	PYTHONPATH          %{install_path}/python/lib64/%{python_lib_dir}/site-packages
 
 setenv          %{PNAME}_DIR        %{install_path}
 setenv          %{PNAME}_DOC        %{install_path}/docs
@@ -256,7 +227,7 @@ setenv          %{PNAME}_INC        %{install_path}/include
 
 EOF
 
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/.version.%{version}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/.version.%{version}
 #%Module1.0#####################################################################
 ##
 ## version file for %{pname}-%{version}
@@ -272,14 +243,11 @@ EOF
 %endif
 
 %files
-%defattr(-,root,root,-)
-%{FSP_HOME}
+%{OHPC_HOME}
 %doc AUTHORS
 %doc COPYING
 %doc ChangeLog
 %doc KNOWN_BUGS
 %doc NEWS
-%doc README
+%doc README.md
 %doc TODO
-
-%changelog

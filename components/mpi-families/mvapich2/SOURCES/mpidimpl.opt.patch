@@ -1,0 +1,22 @@
+--- a/src/mpid/ch3/include/mpidimpl.h	2018-07-24 07:30:00.000000000 -0700
++++ b/src/mpid/ch3/include/mpidimpl.h	2018-07-31 15:47:20.000000000 -0700
+@@ -22,6 +22,11 @@
+  * channel.  Do not include them in the MPID macros.
+  */
+ 
++#ifdef __GNUC__
++#pragma GCC push_options
++#pragma GCC optimize ("O2")
++#endif
++
+ #if !defined(MPICH_MPIDIMPL_H_INCLUDED)
+ #define MPICH_MPIDIMPL_H_INCLUDED
+ 
+@@ -2220,3 +2225,7 @@
+ #endif
+ 
+ #endif /* !defined(MPICH_MPIDIMPL_H_INCLUDED) */
++
++#ifdef __GNUC__
++#pragma GCC pop_options
++#endif

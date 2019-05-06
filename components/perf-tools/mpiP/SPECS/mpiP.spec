@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,72 +8,44 @@
 #
 #----------------------------------------------------------------------------eh-
 
-
-#-fsp-header-comp-begin----------------------------------------------
-
-%include %{_sourcedir}/FSP_macros
-
-# FSP convention: the default assumes the gnu toolchain and openmpi
-# MPI family; however, these can be overridden by specifing the
-# compiler_family and mpi_family variables via rpmbuild or other
-# mechanisms.
-
-%{!?compiler_family: %define compiler_family gnu}
-%{!?mpi_family:      %define mpi_family openmpi}
-%{!?PROJ_DELIM:      %define PROJ_DELIM %{nil}}
-
-# Compiler dependencies 
+# Build that is dependent on compiler/mpi toolchains
+%define ohpc_compiler_dependent 1
+%define ohpc_mpi_dependent 1
+%include %{_sourcedir}/OHPC_macros
 
 # Note: this package is slightly non-standard in that we always use
-# gnu compilers undernead in order to support call-site demangling
-
-BuildRequires: lmod%{PROJ_DELIM}
-BuildRequires: gnu-compilers%{PROJ_DELIM}
-Requires:      gnu-compilers%{PROJ_DELIM}
-
-# MPI dependencies
-%if %{mpi_family} == impi
-BuildRequires: intel-mpi-devel%{PROJ_DELIM}
-Requires:      intel-mpi-devel%{PROJ_DELIM}
+# gnu compilers underneath in order to support call-site demangling
+%if "%{compiler_family}" == "intel"
+Requires:      intel-compilers-devel%{PROJ_DELIM}
+BuildRequires: gnu8-compilers%{PROJ_DELIM}
+Requires:      gnu8-compilers%{PROJ_DELIM}
+%if "%{mpi_family}" != "impi"
+BuildRequires: %{mpi_family}-gnu8%{PROJ_DELIM}
+Requires:      %{mpi_family}-gnu8%{PROJ_DELIM}
 %endif
-%if %{mpi_family} == mvapich2
-BuildRequires: mvapich2-gnu%{PROJ_DELIM}
-Requires:      mvapich2-gnu%{PROJ_DELIM}
 %endif
-%if %{mpi_family} == openmpi
-BuildRequires: openmpi-gnu%{PROJ_DELIM}
-Requires:      openmpi-gnu%{PROJ_DELIM}
-%endif
-
-#-fsp-header-comp-end------------------------------------------------
 
 # Base package name
 %define pname mpiP
-%define PNAME %(echo %{pname} | tr [a-z] [A-Z])
 
 Summary:   mpiP: a lightweight profiling library for MPI applications.
 Name:      %{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 Version:   3.4.1
-Release:   1
-License:   GPLv2+
-Group:     fsp/perf-tools
+Release:   1%{?dist}
+License:   BSD-3
+Group:     %{PROJ_NAME}/perf-tools
 URL:       http://mpip.sourceforge.net/
-Source0:   %{pname}-%{version}.tar.gz
-Source1:   FSP_macros
-Source2:   FSP_setup_compiler
-Source3:   FSP_setup_mpi
-BuildRoot: %{_tmppath}/%{pname}-%{version}-%{release}-root
-DocDir:    %{FSP_PUB}/doc/contrib
+Source0:   http://sourceforge.net/projects/mpip/files/mpiP/mpiP-3.4.1/mpiP-%{version}.tar.gz
+Patch1:    mpip.unwinder.patch
 
 BuildRequires: binutils-devel
 BuildRequires: python
 
-%define debug_package %{nil}
-
 # Default library install path
-%define install_path %{FSP_LIBS}/%{compiler_family}/%{mpi_family}/%{pname}/%version
+%global install_path %{OHPC_LIBS}/%{compiler_family}/%{mpi_family}/%{pname}/%version
+%global module_dir %{compiler_family}-%{mpi_family}
 
-%description 
+%description
 
 mpiP is a lightweight profiling library for MPI applications. Because
 it only collects statistical information about MPI functions, mpiP
@@ -86,41 +58,45 @@ file.
 %prep
 
 %setup -q -n %{pname}-%{version}
+%patch1 -p1
 
 %build
 
-# FSP compiler/mpi designation
+# override with newer config.guess for aarch64
+%ifarch aarch64 || ppc64le
+cp /usr/lib/rpm/config.guess bin
+%endif
+
+# OpenHPC compiler/mpi designation
 
 # note: in order to support call-site demangling, we compile mpiP with gnu
-export FSP_COMPILER_FAMILY=gnu
-export FSP_MPI_FAMILY=%{mpi_family}
-. %{_sourcedir}/FSP_setup_compiler
-. %{_sourcedir}/FSP_setup_mpi
+. %{OHPC_ADMIN}/ohpc/OHPC_setup_compiler gnu8
+module load %{mpi_family}
 
 CC=mpicc
 CXX=mpicxx
 FC=mpif90
 
-
-
-./configure --prefix=%{install_path} --enable-demangling --disable-libunwind || cat config.log
+%ifarch aarch64
+./configure --prefix=%{install_path} --enable-demangling --disable-libunwind --enable-setjmp || { cat config.log && exit 1; }
+%else
+./configure --prefix=%{install_path} --enable-demangling --disable-libunwind || { cat config.log && exit 1; }
+%endif
 
 %install
 
-# FSP compiler designation
+# OpenHPC compiler designation
 
 # note: in order to support call-site demangling, we compile mpiP with gnu
-export FSP_COMPILER_FAMILY=gnu
-export FSP_MPI_FAMILY=%{mpi_family}
-. %{_sourcedir}/FSP_setup_compiler
-. %{_sourcedir}/FSP_setup_mpi
+. %{OHPC_ADMIN}/ohpc/OHPC_setup_compiler gnu8
+module load %{mpi_family}
 
-make %{?_smp_mflags} 
+make %{?_smp_mflags} shared
 make DESTDIR=$RPM_BUILD_ROOT install
 
-# FSP module file
-%{__mkdir} -p %{buildroot}%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/%{version}
+# OpenHPC module file
+%{__mkdir} -p %{buildroot}%{OHPC_MODULEDEPS}/%{module_dir}/%{pname}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{module_dir}/%{pname}/%{version}
 #%Module1.0#####################################################################
 
 proc ModulesHelp { } {
@@ -146,7 +122,7 @@ setenv          %{PNAME}_LIB        %{install_path}/lib
 
 EOF
 
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/.version.%{version}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{module_dir}/%{pname}/.version.%{version}
 #%Module1.0#####################################################################
 ##
 ## version file for %{pname}-%{version}
@@ -156,11 +132,9 @@ EOF
 
 %{__mkdir} -p $RPM_BUILD_ROOT/%{_docdir}
 
-%clean
-rm -rf $RPM_BUILD_ROOT
+# Remove static libs
+rm -rf $RPM_BUILD_ROOT/%{install_path}/lib/*.a
 
 %files
-%defattr(-,root,root,-)
-%{FSP_HOME}
-%{FSP_PUB}
+%{OHPC_PUB}
 %doc ChangeLog doc/PORTING.txt doc/README doc/UserGuide.txt

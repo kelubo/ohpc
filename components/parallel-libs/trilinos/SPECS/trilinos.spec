@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,94 +8,51 @@
 #
 #----------------------------------------------------------------------------eh-
 
-# spec file for package trilinos
-
-#-fsp-header-comp-begin-----------------------------
-
-%include %{_sourcedir}/FSP_macros
-
-# FSP convention: the default assumes the gnu toolchain and openmpi
-# MPI family; however, these can be overridden by specifing the
-# compiler_family and mpi_family variables via rpmbuild or other
-# mechanisms.
-
-%{!?compiler_family: %define compiler_family gnu}
-%{!?mpi_family:      %define mpi_family      openmpi}
-%{!?PROJ_DELIM:      %define PROJ_DELIM      %{nil}}
-
-# Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
-%if %{compiler_family} == gnu
-BuildRequires: gnu-compilers%{PROJ_DELIM}
-Requires:      gnu-compilers%{PROJ_DELIM}
-# require Intel runtime for MKL
-BuildRequires: intel-compilers%{PROJ_DELIM}
-Requires:      intel-compilers%{PROJ_DELIM}
-%endif
-%if %{compiler_family} == intel
-BuildRequires: gcc-c++ intel-compilers-devel%{PROJ_DELIM}
-Requires:      gcc-c++ intel-compilers-devel%{PROJ_DELIM}
-%if 0%{?FSP_BUILD}
-BuildRequires: intel_licenses
-%endif
-%endif
-
-# MPI dependencies
-%if %{mpi_family} == impi
-BuildRequires: intel-mpi-devel%{PROJ_DELIM}
-Requires:      intel-mpi-devel%{PROJ_DELIM}
-%endif
-%if %{mpi_family} == mvapich2
-BuildRequires: mvapich2-%{compiler_family}%{PROJ_DELIM}
-Requires:      mvapich2-%{compiler_family}%{PROJ_DELIM}
-%endif
-%if %{mpi_family} == openmpi
-BuildRequires: openmpi-%{compiler_family}%{PROJ_DELIM}
-Requires:      openmpi-%{compiler_family}%{PROJ_DELIM}
-%endif
-
-#-fsp-header-comp-end-------------------------------
+# Build that is is dependent on compiler toolchain and MPI
+%define ohpc_compiler_dependent 1
+%define ohpc_mpi_dependent 1
+%include %{_sourcedir}/OHPC_macros
 
 # Base package name
 %define pname trilinos
-%define PNAME %(echo %{pname} | tr [a-z] [A-Z])
+%define ver_exp 12-12-1
 
 Name:           %{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
-Version:        11.14.3
-Release:        0
+Version:        12.12.1
+Release:        1%{?dist}
 Summary:        A collection of libraries of numerical algorithms
 License:        LGPL-2.0
-Group:          fsp/parallel-libs
+Group:          %{PROJ_NAME}/parallel-libs
 Url:            http://trilinos.sandia.gov/index.html
-Source0:        %{pname}-%{version}.tar.gz
+Source0:        https://github.com/trilinos/Trilinos/archive/trilinos-release-%{ver_exp}.tar.gz
 Patch0:         trilinos-11.14.3-no-return-in-non-void.patch
-Patch1:         trilinos-11.14.3-no_rpath.patch
-BuildRequires:  cmake >= 2.8
-#BuildRequires:  cppunit-devel
+BuildRequires:  cmake%{PROJ_DELIM}
 BuildRequires:  doxygen
 BuildRequires:  expat
 BuildRequires:  graphviz
 BuildRequires:  libxml2-devel
+Requires:       lmod%{PROJ_DELIM} >= 7.6.1
 BuildRequires:  perl
+%if 0%{?rhel_version} || 0%{?centos_version} || 0%{?rhel}
+BuildRequires:  qt-devel
+%else
 BuildRequires:  libqt4-devel
+%endif
 BuildRequires:  swig > 2.0.0
 BuildRequires:  xz
 BuildRequires:  zlib-devel
 BuildRequires:  boost-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 BuildRequires:  phdf5-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 BuildRequires:  netcdf-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
-%if 0%{?suse_version} <= 1110
-%{!?python_sitearch: %global python_sitearch %(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%if "%{compiler_family}" != "intel" && "%{compiler_family}" != "arm"
+BuildRequires:  openblas-%{compiler_family}%{PROJ_DELIM}
 %endif
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-DocDir:         %{FSP_PUB}/doc/contrib
 
-%include %{_sourcedir}/FSP_macros
 #!BuildIgnore: post-build-checks
-%define debug_package %{nil}
+#!BuildIgnore: brp-check-suse
 
 # Default library install path
-%define install_path %{FSP_LIBS}/%{compiler_family}/%{mpi_family}/%{pname}/%version
+%define install_path %{OHPC_LIBS}/%{compiler_family}/%{mpi_family}/%{pname}/%version
 
 %description
 Trilinos is a collection of compatible software packages that support parallel
@@ -105,23 +62,21 @@ C++ using object-oriented techniques. All packages are self-contained, with the
 Trilinos top layer providing a common look-and-feel and infrastructure.
 
 %prep
-%setup -q -n %{pname}-%{version}
+%setup -q -n  Trilinos-trilinos-release-%{ver_exp}
 %patch0 -p1
-%patch1 -p1
 
 %build
-# FSP compiler/mpi designation
-export FSP_COMPILER_FAMILY=%{compiler_family}
-export FSP_MPI_FAMILY=%{mpi_family}
-. %{_sourcedir}/FSP_setup_compiler
-. %{_sourcedir}/FSP_setup_mpi
+# OpenHPC compiler/mpi designation
+%ohpc_setup_compiler
 
-%if %{compiler_family} == gnu
-module load mkl
-%endif
-module load phdf5
-module load netcdf
+module load cmake
 module load boost
+module load netcdf
+module load phdf5
+
+%if "%{compiler_family}" != "intel" && "%{compiler_family}" != "arm"
+module load openblas
+%endif
 
 mkdir tmp
 cd tmp
@@ -133,26 +88,8 @@ cmake   -DCMAKE_INSTALL_PREFIX=%{install_path}                          \
         -DCMAKE_SKIP_INSTALL_RPATH:BOOL=ON                              \
         -DCMAKE_SKIP_RPATH:BOOL=ON                                      \
         -DTrilinos_VERBOSE_CONFIGURE:BOOL=ON                            \
-        -DTrilinos_ENABLE_ALL_PACKAGES:BOOL=ON                          \
-        -DTrilinos_ENABLE_Didasko:BOOL=ON                               \
-        -DTrilinos_ENABLE_Stokhos:BOOL=ON                               \
-        -DTrilinos_ENABLE_Phalanx:BOOL=ON                               \
-        -DTrilinos_ENABLE_TrilinosCouplings:BOOL=ON                     \
-        -DTrilinos_ENABLE_PyTrilinos:BOOL=OFF                           \
-        -DTrilinos_ENABLE_CTrilinos:BOOL=ON                             \
-%if 0%{?suse_version} >= 1210
-        -DTrilinos_ENABLE_ForTrilinos:BOOL=ON                           \
-%endif
-        -DTrilinos_ENABLE_STK:BOOL=OFF                                  \
-        -DTrilinos_ENABLE_TESTS:BOOL=OFF                                \
-        -DTrilinos_ENABLE_OpenMP:BOOL=ON                                \
-        -DTEUCHOS_ENABLE_expat:BOOL=ON                                  \
-        -DTEUCHOS_ENABLE_libxml2:BOOL=ON                                \
-        -DTEUCHOS_ENABLE_gmp:BOOL=ON                                    \
-        -DTPL_ENABLE_MPI:BOOL=ON                                        \
-        -DMPI_C_COMPILER:FILEPATH=mpicc                                 \
-        -DMPI_CXX_COMPILER:FILEPATH=mpicxx                              \
-        -DMPI_FORTRAN_COMPILER:FILEPATH=mpif90                          \
+        -DTrilinos_ENABLE_ALL_PACKAGES:BOOL=OFF                         \
+%if "%{compiler_family}" == "intel"
         -DTPL_ENABLE_MKL:BOOL=ON                                        \
         -DMKL_INCLUDE_DIRS:FILEPATH="${MKLROOT}/include"                \
         -DMKL_LIBRARY_DIRS:FILEPATH="${MKLROOT}/lib/intel64"            \
@@ -163,6 +100,51 @@ cmake   -DCMAKE_INSTALL_PREFIX=%{install_path}                          \
         -DTPL_ENABLE_LAPACK:BOOL=ON                                     \
         -DLAPACK_LIBRARY_DIRS:PATH="${MKLROOT}/lib/intel64"             \
         -DLAPACK_LIBRARY_NAMES:STRING="mkl_rt"                          \
+%else
+%if "%{compiler_family}" == "arm"
+        -DTPL_ENABLE_BLAS:BOOL=ON                                       \
+        -DBLAS_LIBRARY_DIRS:PATH="${ARMPL_LIBRARIES}"                   \
+        -DBLAS_LIBRARY_NAMES:STRING="armpl_mp"                          \
+        -DTPL_ENABLE_LAPACK:BOOL=ON                                     \
+        -DLAPACK_LIBRARY_DIRS:PATH="${ARMPL_LIBRARIES}"                 \
+        -DLAPACK_LIBRARY_NAMES:STRING="armpl_mp"                        \
+%else
+        -DTPL_ENABLE_BLAS:BOOL=ON                                       \
+        -DBLAS_LIBRARY_DIRS:PATH="${OPENBLAS_LIB}"                      \
+        -DBLAS_LIBRARY_NAMES:STRING="openblas"                          \
+        -DTPL_ENABLE_LAPACK:BOOL=ON                                     \
+        -DLAPACK_LIBRARY_DIRS:PATH="${OPENBLAS_LIB}"                    \
+        -DLAPACK_LIBRARY_NAMES:STRING="openblas"                        \
+%endif
+%if "%{compiler_family}" == "llvm" || "%{compiler_family}" == "arm"
+        -DTrilinos_EXTRA_LINK_FLAGS:STRING="-lflang"                    \
+%else
+        -DTrilinos_EXTRA_LINK_FLAGS:STRING="-lgfortran"                 \
+%endif
+%endif
+        -DTrilinos_ENABLE_MueLu:BOOL=ON                                 \
+        -DTrilinos_ENABLE_Phalanx:BOOL=ON                               \
+        -DTrilinos_ENABLE_Stokhos:BOOL=ON                               \
+        -DTrilinos_ENABLE_Didasko:BOOL=ON                               \
+        -DTrilinos_ENABLE_TrilinosCouplings:BOOL=ON                     \
+        -DTrilinos_ENABLE_PyTrilinos:BOOL=OFF                           \
+        -DTrilinos_ENABLE_CTrilinos:BOOL=ON                             \
+%if 0%{?suse_version} >= 1210
+        -DTrilinos_ENABLE_ForTrilinos:BOOL=ON                           \
+%endif
+        -DTrilinos_ENABLE_EXAMPLES:BOOL=OFF                             \
+        -DTrilinos_ENABLE_STK:BOOL=OFF                                  \
+        -DTrilinos_ENABLE_TESTS:BOOL=OFF                                \
+        -DTrilinos_ENABLE_OpenMP:BOOL=ON                                \
+        -DTrilinos_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON                \
+        -DTEUCHOS_ENABLE_expat:BOOL=ON                                  \
+        -DTEUCHOS_ENABLE_expat:BOOL=ON                                  \
+        -DTEUCHOS_ENABLE_libxml2:BOOL=ON                                \
+        -DTEUCHOS_ENABLE_gmp:BOOL=ON                                    \
+        -DTPL_ENABLE_MPI:BOOL=ON                                        \
+        -DMPI_C_COMPILER:FILEPATH=mpicc                                 \
+        -DMPI_CXX_COMPILER:FILEPATH=mpicxx                              \
+        -DMPI_FORTRAN_COMPILER:FILEPATH=mpif90                          \
         -DTPL_ENABLE_Netcdf:BOOL=ON                                     \
         -DNetcdf_INCLUDE_DIRS:PATH="${NETCDF_INC}"                      \
         -DNetcdf_LIBRARY_DIRS:PATH="${NETCDF_LIB}"                      \
@@ -188,18 +170,19 @@ cmake   -DCMAKE_INSTALL_PREFIX=%{install_path}                          \
 #       -DBLACS_LIBRARY_DIRS:PATH="$MKLROOT/lib/intel64"                \
 #       -DBLACS_INCLUDE_DIRS:PATH="$MKLROOT/include"                    \
 #       -DBLACS_LIBRARY_NAMES:STRING="mkl_rt"                           \
-make VERBOSE=1
-make %{?_smp_mflags}
+
+make %{?_smp_mflags} VERBOSE=1
 cd ..
 
 %install
+%ohpc_setup_compiler
 cd tmp
-make DESTDIR=%{buildroot} install INSTALL='install -p'
+make %{?_smp_mflags} DESTDIR=%{buildroot} install INSTALL='install -p'
 cd ..
 
-# FSP module file
-%{__mkdir_p} %{buildroot}%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/%{version}
+# OpenHPC module file
+%{__mkdir_p} %{buildroot}%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/%{version}
 #%Module1.0#####################################################################
 
 proc ModulesHelp { } {
@@ -227,9 +210,14 @@ setenv          %{PNAME}_BIN        %{install_path}/bin
 setenv          %{PNAME}_INC        %{install_path}/include
 setenv          %{PNAME}_LIB        %{install_path}/lib
 
+%if "%{compiler_family}" != "intel" && "%{compiler_family}" != "arm"
+# Autoload openblas for gnu and llvm builds
+depends-on openblas
+%endif
+
 EOF
 
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/.version.%{version}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/.version.%{version}
 #%Module1.0#####################################################################
 ##
 ## version file for %{pname}-%{version}
@@ -239,16 +227,6 @@ EOF
 
 %{__mkdir_p} %{buildroot}/%_docdir
 
-%clean
-rm -rf %{buildroot}
-
-%post -p /sbin/ldconfig
-%postun -p /sbin/ldconfig
-
 %files
-%defattr(-,root,root,-)
-%{FSP_HOME}
-%{FSP_PUB}
-%doc CHANGELOG Copyright.txt INSTALL LICENSE README RELEASE_NOTES
-
-%changelog
+%{OHPC_PUB}
+%doc Copyright.txt INSTALL LICENSE README RELEASE_NOTES

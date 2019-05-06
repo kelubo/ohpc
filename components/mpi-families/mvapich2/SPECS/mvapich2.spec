@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -9,79 +9,69 @@
 #----------------------------------------------------------------------------eh-
 
 # MVAPICH2 MPI stack that is dependent on compiler toolchain
+%define ohpc_compiler_dependent 1
+%include %{_sourcedir}/OHPC_macros
 
-%define with_slurm 0
-%define with_psm 0
+# Multiple permutations for this MPI stack are possible depending
+# on the desired underlying resource manager and comm library support.
 
-#-fsp-header-comp-begin----------------------------------------------
+%{!?with_slurm: %global with_slurm 0}
+%{!?with_pbs: %global with_pbs 0}
+%{!?with_psm: %global with_psm 0}
+%{!?with_psm2: %global with_psm2 0}
+%{!?RMS_DELIM: %global RMS_DELIM %{nil}}
+%{!?COMM_DELIM: %global COMM_DELIM %{nil}}
 
-# FSP convention: the default assumes the gnu compiler family;
-# however, this can be overridden by specifing the compiler_family
-# variable via rpmbuild or other mechanisms.
-
-%{!?compiler_family: %define compiler_family gnu}
-%{!?PROJ_DELIM:      %define PROJ_DELIM   %{nil}}
-
-# Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM}
-%if %{compiler_family} == gnu
-BuildRequires: gnu-compilers%{PROJ_DELIM}
-Requires:      gnu-compilers%{PROJ_DELIM}
-%endif
-%if %{compiler_family} == intel
-BuildRequires: gcc-c++ intel-compilers-devel%{PROJ_DELIM}
-Requires:      gcc-c++ intel-compilers-devel%{PROJ_DELIM}
-%if 0%{FSP_BUILD}
-BuildRequires: intel_licenses
-%endif
-%endif
-
-#-fsp-header-comp-end------------------------------------------------
-
-%if 0%{with_slurm}
-BuildRequires: slurm-devel%{PROJ_DELIM} slurm%{PROJ_DELIM}
-%endif
-
-%if %{with_psm}
-BuildRequires:  infinipath-psm infinipath-psm-devel
-%endif
-
-%include %{_sourcedir}/FSP_macros
-
-# Base package name
+# Base package name/config
 %define pname mvapich2
 
 Summary:   OSU MVAPICH2 MPI implementation
-Name:      %{pname}-%{compiler_family}%{PROJ_DELIM}
-Version:   2.1
-Release:   1
+Name:      %{pname}%{COMM_DELIM}-%{compiler_family}%{RMS_DELIM}%{PROJ_DELIM}
+Version:   2.3
+Release:   1%{?dist}
 License:   BSD
-Group:     fsp/mpi-families
+Group:     %{PROJ_NAME}/mpi-families
 URL:       http://mvapich.cse.ohio-state.edu/overview/mvapich2/
-DocDir:    %{FSP_PUB}/doc/contrib
-Source0:   %{pname}-%{version}.tar.gz
-Source1:   FSP_macros
-Source2:   FSP_setup_compiler
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+Source0:   http://mvapich.cse.ohio-state.edu/download/mvapich/mv2/%{pname}-%{version}.tar.gz
 
-%define debug_package %{nil}
+# karl.w.schulz@intel.com (04/13/2016)
+Patch0:    mvapich2-get_cycles.patch
+# karl.w.schulz@intel.com (05/21/2017)
+Patch1:     mpidimpl.opt.patch
+
+%if 0%{with_slurm}
+BuildRequires: slurm-devel%{PROJ_DELIM} slurm%{PROJ_DELIM}
+Provides:      %{pname}-%{compiler_family}%{PROJ_DELIM}
+%endif
+
+%if 0%{with_psm}
+BuildRequires:  infinipath-psm infinipath-psm-devel
+Provides: %{pname}-%{compiler_family}%{PROJ_DELIM}
+%endif
+
+%if 0%{with_psm2}
+BuildRequires:  libpsm2-devel >= 10.2.0
+Requires:       libpsm2 >= 10.2.0
+Provides: %{pname}-%{compiler_family}%{PROJ_DELIM}
+Conflicts: %{pname}-%{compiler_family}%{PROJ_DELIM}
+%endif
 
 %if 0%{?sles_version} || 0%{?suse_version}
-Buildrequires: ofed 
+Buildrequires: ofed
+BuildRequires: rdma-core-devel infiniband-diags-devel
 %endif
-%if 0%{?rhel_version} || 0%{?centos_version}
-Buildrequires: rdma
+%if 0%{?rhel}
+Buildrequires: rdma-core-devel libibmad-devel
 %endif
 
 Requires: prun%{PROJ_DELIM}
-
 BuildRequires: bison
-BuildRequires: libibmad-devel libibverbs-devel
+BuildRequires: zlib-devel
 
 # Default library install path
-%define install_path %{FSP_MPI_STACKS}/%{name}/%version
+%define install_path %{OHPC_MPI_STACKS}/%{pname}-%{compiler_family}/%version
 
-%description 
+%description
 
 MVAPICH2 is a high performance MPI-2 implementation (with initial
 support for MPI-3) for InfiniBand, 10GigE/iWARP and RoCE.  MVAPICH2
@@ -92,44 +82,42 @@ across multiple networks.
 %prep
 
 %setup -q -n %{pname}-%{version}
+%patch0 -p1
+%patch1 -p1
 
 %build
-
-# FSP compiler designation
-export FSP_COMPILER_FAMILY=%{compiler_family}
-. %{_sourcedir}/FSP_setup_compiler
-
+%ohpc_setup_compiler
 ./configure --prefix=%{install_path} \
 	    --enable-cxx \
 	    --enable-g=dbg \
             --with-device=ch3:mrail \
-%if %{with_psm}
+%if 0%{?with_pwm} || 0%{?with_psm2}
             --with-device=ch3:psm \
 %endif
 %if 0%{with_slurm}
             --with-pm=no --with-pmi=slurm \
 %endif
-	    --enable-fast=O3 || cat config.log
+	    --enable-fast=O3 || { cat config.log && exit 1; }
+
+%if "%{compiler_family}" == "llvm" || "%{compiler_family}" == "arm"
+%{__sed} -i -e 's#wl=""#wl="-Wl,"#g' libtool
+%{__sed} -i -e 's#pic_flag=""#pic_flag=" -fPIC -DPIC"#g' libtool
+%endif
+
+make %{?_smp_mflags}
 
 %install
+%ohpc_setup_compiler
 
-# FSP compiler designation
-export FSP_COMPILER_FAMILY=%{compiler_family}
-. %{_sourcedir}/FSP_setup_compiler
-
-#make %{?_smp_mflags} DESTDIR=$RPM_BUILD_ROOT install
-
-# 06/04/15 - karl.w.schulz@intel.com; run serial build for fortran deps
-make DESTDIR=$RPM_BUILD_ROOT install
+make %{?_smp_mflags} DESTDIR=$RPM_BUILD_ROOT install
 
 # Remove .la files detected by rpm
-
 rm $RPM_BUILD_ROOT/%{install_path}/lib/*.la
 
 
-# FSP module file
-%{__mkdir_p} %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}/%{pname}
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}/%{pname}/%{version}
+# OpenHPC module file
+%{__mkdir_p} %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}/%{pname}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}/%{pname}/%{version}
 #%Module1.0#####################################################################
 
 proc ModulesHelp { } {
@@ -148,16 +136,16 @@ module-whatis "URL: %{url}"
 set     version			    %{version}
 
 prepend-path    PATH                %{install_path}/bin
-prepend-path    MANPATH             %{install_path}/man
+prepend-path    MANPATH             %{install_path}/share/man
 prepend-path	LD_LIBRARY_PATH	    %{install_path}/lib
-prepend-path    MODULEPATH          %{FSP_MODULEDEPS}/%{compiler_family}-%{pname}
+prepend-path    MODULEPATH          %{OHPC_MODULEDEPS}/%{compiler_family}-%{pname}
 prepend-path    MPI_DIR             %{install_path}
 prepend-path    PKG_CONFIG_PATH     %{install_path}/lib/pkgconfig
 
 family "MPI"
 EOF
 
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}/%{pname}/.version.%{version}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}/%{pname}/.version.%{version}
 #%Module1.0#####################################################################
 ##
 ## version file for %{pname}-%{version}
@@ -167,25 +155,10 @@ EOF
 
 %{__mkdir_p} ${RPM_BUILD_ROOT}/%{_docdir}
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
-%post
-/sbin/ldconfig || exit 1
-
-%postun -p /sbin/ldconfig
-
 %files
-%defattr(-,root,root,-)
-%{FSP_HOME}
+%{OHPC_HOME}
 %doc README.envvar
 %doc COPYRIGHT
 %doc CHANGELOG
 %doc CHANGES
 %doc README
-
-
-%changelog
-* Tue Aug  5 2014  <karl.w.schulz@intel.com> - 
-- Initial build.
-

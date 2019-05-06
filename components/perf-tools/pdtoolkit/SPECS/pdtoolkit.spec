@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,71 +8,45 @@
 #
 #----------------------------------------------------------------------------eh-
 
-%include %{_sourcedir}/FSP_macros
-
-# FSP convention: the default assumes the gnu toolchain and openmpi
-# MPI family; however, these can be overridden by specifing the
-# compiler_family variable via rpmbuild or other
-# mechanisms.
-
-%{!?compiler_family: %define compiler_family gnu}
-%{!?mpi_family: %define mpi_family openmpi}
-%{!?PROJ_DELIM:      %define PROJ_DELIM      %{nil}}
-
-# Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
-%if %{compiler_family} == gnu
-BuildRequires: gnu-compilers%{PROJ_DELIM}
-Requires:      gnu-compilers%{PROJ_DELIM}
-%endif
-%if %{compiler_family} == intel
-BuildRequires: gcc-c++ intel-compilers-devel%{PROJ_DELIM}
-Requires:      gcc-c++ intel-compilers-devel%{PROJ_DELIM}
-%if 0%{?FSP_BUILD}
-BuildRequires: intel_licenses
-%endif
-%endif
-
-#-fsp-header-comp-end------------------------------------------------
+# Build that is dependent on compiler toolchains
+%define ohpc_compiler_dependent 1
+%include %{_sourcedir}/OHPC_macros
 
 # Base package name
 %define pname pdtoolkit
-%define PNAME %(echo %{pname} | tr [a-z] [A-Z])
-
 
 Name: %{pname}-%{compiler_family}%{PROJ_DELIM}
-Version:        3.20
-Release:        1
+Version:        3.25
+Release:        1%{?dist}
 License:        Program Database Toolkit License
 Summary:        PDT is a framework for analyzing source code
 Url:            http://www.cs.uoregon.edu/Research/pdt
-Group:          fsp/perf-tools
-Source:         %{pname}-%{version}.tar.gz
+Group:          %{PROJ_NAME}/perf-tools
+Source:         https://www.cs.uoregon.edu/research/paracomp/pdtoolkit/Download/pdtoolkit-%{version}.tar.gz
+Patch1:         pdtoolkit-3.25-umask.patch
 Provides:       %{name} = %{version}%{release}
 Provides:       %{name} = %{version}
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-DocDir:         %{FSP_PUB}/doc/contrib
 
-%define debug_package %{nil}
+#!BuildIgnore: post-build-checks
 
 # Default library install path
-%define install_path %{FSP_LIBS}/%{compiler_family}/%{pname}/%version
-
+%define install_path %{OHPC_LIBS}/%{compiler_family}/%{pname}/%version
 
 %description
 Program Database Toolkit (PDT) is a framework for analyzing source code written in several programming languages and for making rich program knowledge accessible to developers of static and dynamic analysis tools. PDT implements a standard program representation, the program database (PDB), that can be accessed in a uniform way through a class library supporting common PDB operations.
 
 %prep
 %setup -q -n %{pname}-%{version}
+%patch1 -p1
 
 
 %build
-# FSP compiler/mpi designation
-export FSP_COMPILER_FAMILY=%{compiler_family}
-. %{_sourcedir}/FSP_setup_compiler
+# OpenHPC compiler/mpi designation
+%ohpc_setup_compiler
 
 ./configure -prefix=%buildroot%{install_path} \
-%if %{compiler_family} == intel 
+        -useropt=-fPIC \
+%if "%{compiler_family}" == "intel"
         -icpc
 %else
         -GNU
@@ -93,29 +67,60 @@ rm -f %buildroot%{install_path}/contrib/rose/edg44/x86_64/roseparse/config.log
 rm -f %buildroot%{install_path}/contrib/rose/edg44/x86_64/roseparse/config.status
 rm -f %buildroot%{install_path}/.all_configs
 rm -f %buildroot%{install_path}/.last_config
-pushd %buildroot%{install_path}/x86_64/bin
+
+%ifarch aarch64
+%define arch_dir arm64_linux
+%endif
+%ifarch x86_64
+%define arch_dir x86_64
+%endif
+%ifarch ppc64le
+%define arch_dir ibm64linux
+%endif
+
+pushd %buildroot%{install_path}/%{arch_dir}/lib
+ar x libpdb.a
+$CXX -z muldefs -shared -o libpdb.so *.o
+rm libpdb.a *\.o
+popd
+
+pushd %buildroot%{install_path}/%{arch_dir}/bin
 sed -i 's|%{buildroot}||g' $(egrep -IR '%{buildroot}' ./|awk -F : '{print $1}')
 rm -f edg33-upcparse
+%ifarch x86_64
 ln -s ../../contrib/rose/roseparse/upcparse edg33-upcparse
 sed -i 's|%buildroot||g' ../../contrib/rose/roseparse/upcparse
+%endif
 rm -f edg44-c-roseparse
-ln -s  ../../contrib/rose/edg44/x86_64/roseparse/edg44-c-roseparse
-sed -i 's|%buildroot||g' ../../contrib/rose/edg44/x86_64/roseparse/edg44-c-roseparse
+%ifnarch aarch64 || ppc64le
+ln -s  ../../contrib/rose/edg44/%{arch_dir}/roseparse/edg44-c-roseparse
+sed -i 's|%buildroot||g' ../../contrib/rose/edg44/%{arch_dir}/roseparse/edg44-c-roseparse
+%endif
 rm -f edg44-cxx-roseparse
-ln -s  ../../contrib/rose/edg44/x86_64/roseparse/edg44-cxx-roseparse
-sed -i 's|%buildroot||g' ../../contrib/rose/edg44/x86_64/roseparse/edg44-cxx-roseparse
+%ifnarch aarch64 || ppc64le
+ln -s  ../../contrib/rose/edg44/%{arch_dir}/roseparse/edg44-cxx-roseparse
+sed -i 's|%buildroot||g' ../../contrib/rose/edg44/%{arch_dir}/roseparse/edg44-cxx-roseparse
+%endif
 rm -f edg44-upcparse
-ln -s  ../../contrib/rose/edg44/x86_64/roseparse/edg44-upcparse
-sed -i 's|%buildroot||g' ../../contrib/rose/edg44/x86_64/roseparse/edg44-upcparse
+%ifnarch aarch64 || ppc64le
+ln -s  ../../contrib/rose/edg44/%{arch_dir}/roseparse/edg44-upcparse
+sed -i 's|%buildroot||g' ../../contrib/rose/edg44/%{arch_dir}/roseparse/edg44-upcparse
+%endif
 rm -f pebil.static
-ln -s  ../../contrib/pebil/pebil/pebil.static
 rm -f roseparse
-ln -s  ../../contrib/rose/roseparse/roseparse
-sed -i 's|%buildroot||g' ../../contrib/rose/roseparse/roseparse
 rm -f smaqao
+%ifarch x86_64
+ln -s  ../../contrib/pebil/pebil/pebil.static
+ln -s  ../../contrib/rose/roseparse/roseparse
 ln -s  ../../contrib/maqao/maqao/smaqao
+sed -i 's|%buildroot||g' ../../contrib/rose/roseparse/roseparse
+%endif
+sed -i 's|/usr/local/bin/perl|/usr/bin/perl|g' ../../contrib/rose/rose-header-gen/config/depend.pl
+sed -i 's|/usr/local/bin/perl|/usr/bin/perl|g' ../../contrib/rose/rose-header-gen/config/cmp.pl
+rm -f ../../contrib/rose/rose-header-gen/config.log
+rm -f ../../contrib/rose/rose-header-gen/config.status
 popd
-pushd %buildroot%{install_path}/x86_64
+pushd %buildroot%{install_path}/%{arch_dir}
 rm -f include
 ln -s ../include
 popd
@@ -123,9 +128,9 @@ install -d %buildroot%{install_path}/include
 install -d %buildroot%{install_path}/lib
 install -d %buildroot%{install_path}/man
 
-# FSP module file
-%{__mkdir} -p %{buildroot}%{FSP_MODULEDEPS}/%{compiler_family}/%{pname}
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}/%{pname}/%{version}
+# OpenHPC module file
+%{__mkdir} -p %{buildroot}%{OHPC_MODULEDEPS}/%{compiler_family}/%{pname}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}/%{pname}/%{version}
 #%Module1.0#####################################################################
 
 proc ModulesHelp { } {
@@ -144,19 +149,19 @@ module-whatis "URL %{url}"
 
 set     version                     %{version}
 
-prepend-path    PATH                %{install_path}/x86_64/bin
+prepend-path    PATH                %{install_path}/%{arch_dir}/bin
 prepend-path    MANPATH             %{install_path}/man
 prepend-path    INCLUDE             %{install_path}/include
-prepend-path    LD_LIBRARY_PATH     %{install_path}/lib
+prepend-path    LD_LIBRARY_PATH     %{install_path}/%{arch_dir}/lib
 
 setenv          %{PNAME}_DIR        %{install_path}
-setenv          %{PNAME}_BIN        %{install_path}/x86_64/bin
-setenv          %{PNAME}_LIB        %{install_path}/lib
+setenv          %{PNAME}_BIN        %{install_path}/%{arch_dir}/bin
+setenv          %{PNAME}_LIB        %{install_path}/%{arch_dir}/lib
 setenv          %{PNAME}_INC        %{install_path}/include
 
 EOF
 
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}/%{pname}/.version.%{version}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}/%{pname}/.version.%{version}
 #%Module1.0#####################################################################
 ##
 ## version file for %{pname}-%{version}
@@ -166,18 +171,6 @@ EOF
 
 %{__mkdir} -p %{buildroot}/%{_docdir}
 
-%clean
-%{?buildroot:%__rm -rf "%{buildroot}"}
-
-%post
-
-%postun
-
 %files
-%defattr(-,root,root,-)
-%{FSP_HOME}
-%{FSP_PUB}
+%{OHPC_PUB}
 %doc CREDITS LICENSE README
-
-%changelog
-

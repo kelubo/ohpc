@@ -1,22 +1,19 @@
 # -*-sh-*-
-#
+# ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
 # Template input file to define local variable settings for use with
-# an FSP installation recipe.
+# an OpenHPC installation recipe.
 # ------------------------------------------------------------------------------------------------
 
 # ---------------------------
 # SMS (master) node settings
 # ---------------------------
 
-# URL for FSP repository
-fsp_repo="${fsp_repo:-http://tcgsw-obs.pdx.intel.com:82/ForestPeak:/15.31/SLE_12_Intel/ForestPeak:15.31.repo}"
-
 # Hostname for master server (SMS)
-master_name="${master_name:-sms}"
+sms_name="${sms_name:-sms}"
                               
 # Local (internal) IP address on SMS
-master_ip="${master_ip:-172.16.0.1}"
+sms_ip="${sms_ip:-172.16.0.1}"
 
 # Internal ethernet interface on SMS
 sms_eth_internal="${sms_eth_internal:-eth1}"
@@ -27,17 +24,41 @@ internal_netmask="${internal_netmask:-255.255.0.0}"
 # Provisioning interface used by compute hosts
 eth_provision="${eth_provision:-eth0}"
 
+# Local ntp server for time synchronization
+ntp_server="${ntp_server:-0.us.pool.ntp.org}"
+
 # BMC user credentials for use by IPMI
 bmc_username="${bmc_username:-unknown}"
 bmc_password="${bmc_password:-unknown}"
 
-# Flags for optional installation/configuration
+# Additional time to wait for compute nodes to provision (seconds)
+provision_wait="${provision_wait:-180}"
 
-enable_lustre_client="${enable_lustre_client:-0}"
+# Flags for optional installation/configuration
+enable_ib="${enable_ib:-0}"
+enable_opa="${enable_opa:-0}"
+enable_opafm="${enable_opafm:-0}"
+enable_mpi_defaults="${enable_mpi_defaults:-1}"
 enable_ipoib="${enable_ipoib:-0}"
-enable_kargs="${enable_kargs:-0}"
-enable_nagios="${enable_nagios:-0}"
+
+enable_clustershell="${enable_clustershell:-0}"
+enable_ipmisol="${enable_ipmisol:-0}"
+enable_opensm="${enable_opensm:-0}"
 enable_ganglia="${enable_ganglia:-0}"
+enable_genders="${enable_genders:-0}"
+enable_kargs="${enable_kargs:-0}"
+enable_beegfs_client="${enable_beegfs_client:-0}"
+enable_lustre_client="${enable_lustre_client:-0}"
+enable_mrsh="${enable_mrsh:-0}"
+enable_nagios="${enable_nagios:-0}"
+enable_powerman="${enable_powerman:-0}"
+enable_pmix="${enable_pmix:-0}"
+enable_geopm="${enable_geopm:-0}"
+enable_intel_packages="${enable_intel_packages:-0}"
+
+nagios_web_password="${nagios_web_password:-unknown}"
+update_slurm_nodeconfig="${update_slurm_nodeconfig:-0}"
+slurm_node_config="${slurm_node_config:-c[1-4] Sockets=2 CoresPerSocket=12 ThreadsPerCore=2}"
 
 # -------------------------
 # compute node settings
@@ -46,8 +67,9 @@ enable_ganglia="${enable_ganglia:-0}"
 # total number of computes
 num_computes="${num_computes:-4}"
 
-# regex that matches defined compute hostnames
-compute_regex="${compute_rexex:-c*}"
+# regex and starting prefix that matches defined compute hostnames
+compute_regex="${compute_regex:-c*}"
+compute_prefix="${compute_prefix:-c}"
 
 # compute hostnames
 c_name[0]=c1
@@ -78,7 +100,13 @@ c_bmc[3]=10.16.1.4
 #-------------------
 
 # additional arguments to enable optional arguments for bootstrap kernel
-kargs="${kargs:-acpi_pad.disable=1}"
+kargs="${kargs:-acpi_pad.disable=1 wwkmods=msr}"
+
+# BeeGFS repository URL
+beegfs_repo="${beegfs_repo:-https://www.beegfs.io/release/beegfs_6/dists/beegfs-suse12.repo}"
+
+# BeeGFS sysMgmtdHost
+sysmgmtd_host="${sysmgmtd_host:-172.17.1.16}"
 
 # Lustre MGS mount name
 mgs_fs_name="${mgs_fs_name:-192.168.100.254@o2ib:/lustre1}"

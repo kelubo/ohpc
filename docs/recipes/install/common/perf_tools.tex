@@ -1,14 +1,11 @@
-To aid in application performance analysis, \FSP{} provides a variety of
-open-source and Intel licensed software. These can be installed as follows:
+\OHPC{} provides a variety of open-source tools to aid in application 
+performance analysis (refer to Appendix~\ref{appendix:manifest} for a listing
+of available packages). This group of tools can be installed as follows:
 
-% begin_fsp_run
-% fsp_comment_header Install Performance Tools \ref{sec:install_perf_tools}
+% begin_ohpc_run
+% ohpc_comment_header Install Performance Tools \ref{sec:install_perf_tools}
 \begin{lstlisting}[language=bash,keywords={},literate={-}{-}1]
-[master]$ (*\install*) papi-fsp
-[master]$ (*\install*) intel-itac-fsp
-[master]$ (*\install*) intel-vtune-fsp
-[master]$ (*\install*) intel-advisor-fsp
-[master]$ (*\install*) intel-inspector-fsp
-[master]$ (*\groupinstall*) fsp-tau
+# Install perf-tools meta-package
+[sms](*\#*) (*\install*) ohpc-gnu8-perf-tools
 \end{lstlisting}
-% end_fsp_run
+% end_ohpc_run

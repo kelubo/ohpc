@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,104 +8,46 @@
 #
 #----------------------------------------------------------------------------eh-
 
-#
-# spec file for package python-scipy
-#
-# Copyright (c) 2013 SUSE LINUX Products GmbH, Nuernberg, Germany.
-#
-# All modifications and additions to the file contributed by third parties
-# remain the property of their copyright owners, unless otherwise agreed
-# upon. The license for this file, and modifications and additions to the
-# file, is the same license as for the pristine package itself (unless the
-# license for the pristine package is not an Open Source License, in which
-# case the license is the MIT License). An "Open Source License" is a
-# license that conforms to the Open Source Definition (Version 1.9)
-# published by the Open Source Initiative.
+# scipy build that is dependent on compiler toolchain
+%define ohpc_compiler_dependent 1
+%define ohpc_mpi_dependent 1
+%define ohpc_python_dependent 1
+%include %{_sourcedir}/OHPC_macros
 
-# Please submit bugfixes or comments via http://bugs.opensuse.org/
-#
+%global gnu_family gnu8
 
-#-fsp-header-comp-begin----------------------------------------------
-
-%include %{_sourcedir}/FSP_macros
-
-# FSP convention: the default assumes the gnu compiler family;
-# however, this can be overridden by specifing the compiler_family
-# variable via rpmbuild or other mechanisms.
-
-%{!?compiler_family: %define compiler_family gnu}
-%{!?mpi_family: %define mpi_family openmpi}
-%{!?PROJ_DELIM:      %define PROJ_DELIM      %{nil}}
-
-# Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
-%if %{compiler_family} == gnu
-BuildRequires: gnu-compilers%{PROJ_DELIM}
-Requires:      gnu-compilers%{PROJ_DELIM}
-# hack to install MKL for the moment
-BuildRequires: intel-compilers%{PROJ_DELIM}
+%if "%{compiler_family}" != "intel" && "%{compiler_family}" != "arm"
+BuildRequires: openblas-%{compiler_family}%{PROJ_DELIM}
+Requires: openblas-%{compiler_family}%{PROJ_DELIM}
 %endif
-%if %{compiler_family} == intel
-BuildRequires: gcc-c++ intel-compilers%{PROJ_DELIM}
-Requires:      gcc-c++ intel-compilers%{PROJ_DELIM}
-%if 0%{?FSP_BUILD}
-BuildRequires: intel_licenses
-%endif
-%endif
-
-# MPI dependencies
-%if %{mpi_family} == impi
-BuildRequires: intel-mpi%{PROJ_DELIM}
-Requires:      intel-mpi%{PROJ_DELIM}
-%endif
-%if %{mpi_family} == mvapich2
-BuildRequires: mvapich2-%{compiler_family}%{PROJ_DELIM}
-Requires:      mvapich2-%{compiler_family}%{PROJ_DELIM}
-%endif
-%if %{mpi_family} == openmpi
-BuildRequires: openmpi-%{compiler_family}%{PROJ_DELIM}
-Requires:      openmpi-%{compiler_family}%{PROJ_DELIM}
-%endif
-
-#-fsp-header-comp-end-------------------------------
 
 # Base package name
 %define pname scipy
-%define PNAME %(echo %{pname} | tr [a-z] [A-Z])
 
-
-Name:           python-%{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
-Version:        0.15.1
-Release:        1
+Name:           %{python_prefix}-%{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
+Version:        1.2.1
+Release:        1%{?dist}
 Summary:        Scientific Tools for Python
 License:        BSD-3-Clause
-Group:          fsp/dev-tools
+Group:          %{PROJ_NAME}/dev-tools
 Url:            http://www.scipy.org
-DocDir:         %{FSP_PUB}/doc/contrib
-Source0:        %{pname}-%{version}.tar.gz
-BuildRequires:  blas-devel
+Source0:        https://github.com/scipy/scipy/archive/v%{version}.tar.gz#/%{pname}-%{version}.tar.gz
 %if 0%{?sles_version} || 0%{?suse_version}
 BuildRequires:  fdupes
 %endif
+%if "%{compiler_family}" != "arm"
 BuildRequires:  fftw-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
-BuildRequires:  lapack-devel
-BuildRequires:  python-devel
-BuildRequires:  python-numpy-%{compiler_family}%{PROJ_DELIM}
+%endif
+BuildRequires:  %{python_prefix}-Cython%{PROJ_DELIM}
+BuildRequires:  %{python_prefix}-numpy-%{compiler_family}%{PROJ_DELIM}
 BuildRequires:  swig
-#%if 0%{?suse_version} > 1140
-#BuildRequires:  suitesparse-devel-static
-#%endif
-# FIXME: atlas is broken right now, do not use
-# %if 0%{?suse_version} <= 1210
-# BuildRequires:  libatlas3-devel
-# %endif
-Requires:       python-numpy-%{compiler_family}%{PROJ_DELIM}
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-
-%define debug_package %{nil}
+Requires:       lmod%{PROJ_DELIM} >= 7.6.1
+Requires:       %{python_prefix}-numpy-%{compiler_family}%{PROJ_DELIM}
 
 # Default library install path
-%define install_path %{FSP_LIBS}/%{compiler_family}/%{mpi_family}/%{pname}/%version
+%define install_path %{OHPC_LIBS}/%{compiler_family}/%{mpi_family}/%{pname}/%version
+
+#!BuildIgnore: post-build-checks
 
 %description
 Scipy is open-source software for mathematics, science, and
@@ -120,17 +62,20 @@ leading scientists and engineers.
 
 %prep
 %setup -q -n %{pname}-%{version}
-find . -type f -name "*.py" -exec sed -i "s|#!/usr/bin/env python||" {} \;
+find . -type f -name "*.py" -exec sed -i "s|#!/usr/bin/env python3||" {} \;
 
-# FSP compiler/mpi designation
-export FSP_COMPILER_FAMILY=%{compiler_family}
-. %{_sourcedir}/FSP_setup_compiler
+%build
+# OpenHPC compiler/mpi designation
+%ohpc_setup_compiler
 
-# Enable MKL linkage for blas/lapack with gnu builds
-%if %{compiler_family} == gnu
-module load mkl
+%if "%{compiler_family}" != "intel" && "%{compiler_family}" != "arm"
+module load openblas
+module load fftw
 %endif
 
+module load %{python_module_prefix}numpy
+
+%if "%{compiler_family}" == "intel"
 cat > site.cfg << EOF
 [mkl]
 library_dirs = $MKLROOT/lib/intel64
@@ -138,107 +83,102 @@ include_dirs = $MKLROOT/include
 mkl_libs = mkl_rt
 lapack_libs =
 EOF
-
-
-%build
-# FSP compiler/mpi designation
-export FSP_COMPILER_FAMILY=%{compiler_family}
-. %{_sourcedir}/FSP_setup_compiler
-
-export FSP_MPI_FAMILY=%{mpi_family}
-. %{_sourcedir}/FSP_setup_mpi
-
-# Enable MKL linkage for blas/lapack with gnu builds
-%if %{compiler_family} == gnu
-module load mkl
 %endif
 
-module load numpy
+%if "%{compiler_family}" == "arm"
+cat > site.cfg << EOF
+[openblas]
+libraries = armpl
+library_dirs = $ARMPL_LIBRARIES
+include_dirs = $ARMPL_INCLUDES
+EOF
+%endif
+
+%if "%{compiler_family}" != "intel" && "%{compiler_family}" != "arm"
+cat > site.cfg << EOF
+[openblas]
+libraries = openblas
+library_dirs = $OPENBLAS_LIB
+include_dirs = $OPENBLAS_INC
+EOF
+%endif
+
 CFLAGS="%{optflags} -fno-strict-aliasing" \
-ATLAS=%{_libdir}/atlas \
-FFTW=%{_libdir}
-BLAS=%{_libdir} \
-LAPACK=%{_libdir} \
-%if %{compiler_family} == intel
+%if "%{compiler_family}" == "intel"
 LDSHARED="icc -shared" \
-python setup.py config --compiler=intelm --fcompiler=intelem build_clib --compiler=intelem --fcompiler=intelem build_ext --compiler=intelem --fcompiler=intelem build
+%__python setup.py config --compiler=intelm --fcompiler=intelem build_clib --compiler=intelem --fcompiler=intelem build_ext --compiler=intelem --fcompiler=intelem build
 %else
-python setup.py config_fc --fcompiler=gnu95 --noarch build
+%if "%{compiler_family}" == "llvm"
+LDSHARED=clang \
+LDFLAGS="-shared -rtlib=compiler-rt -lm" \
+%__python setup.py config_fc --fcompiler=flang --noarch build
+%else
+%if "%{compiler_family}" == "arm"
+LDSHARED=armclang \
+LDFLAGS="-shared -rtlib=compiler-rt -lm" \
+%__python setup.py config_fc --fcompiler=armflang --noarch build
+%else
+%__python setup.py config_fc --fcompiler=gnu95 --noarch build
+%endif
+%endif
 %endif
 
 %install
-# FSP compiler/mpi designation
-export FSP_COMPILER_FAMILY=%{compiler_family}
-. %{_sourcedir}/FSP_setup_compiler
+# OpenHPC compiler/mpi designation
+%ohpc_setup_compiler
 
-export FSP_MPI_FAMILY=%{mpi_family}
-. %{_sourcedir}/FSP_setup_mpi
-
-# Enable MKL linkage for blas/lapack with gnu builds
-%if %{compiler_family} == gnu
-module load mkl
+%if "%{compiler_family}" == "%{gnu_family}"
+module load openblas
 %endif
 
-module load numpy
-python setup.py install --prefix=%{install_path} --root=%{buildroot}
-find %{buildroot}%{install_path}/lib64/python2.7/site-packages/scipy -type d -name tests | xargs rm -rf # Don't ship tests
+module load %{python_module_prefix}numpy
+%__python setup.py install --prefix=%{install_path} --root=%{buildroot}
+find %{buildroot}%{install_path}/lib64/%{python_lib_dir}/site-packages/scipy -type d -name tests | xargs rm -rf # Don't ship tests
 # Don't ship weave examples, they're marked as documentation:
-find %{buildroot}%{install_path}/lib64/python2.7/site-packages/scipy/weave -type d -name examples | xargs rm -rf
-%if 0%{?sles_version} || 0%{?suse_version}
-%fdupes %{buildroot}%{install_path}/lib64/python2.7/site-packages
-%endif
-%{!?compiler_family: %define compiler_family gnu}
-%{!?mpi_family: %define mpi_family openmpi}
-# fix executability issue
-chmod +x %{buildroot}%{install_path}/lib64/python2.7/site-packages/%{pname}/io/arff/arffread.py
-chmod +x %{buildroot}%{install_path}/lib64/python2.7/site-packages/%{pname}/special/spfun_stats.py
+find %{buildroot}%{install_path}/lib64/%{python_lib_dir}/site-packages/scipy/weave -type d -name examples | xargs rm -rf
 
-# FSP module file
-%{__mkdir_p} %{buildroot}%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/%{version}
+%if 0%{?sles_version} || 0%{?suse_version}
+%fdupes %{buildroot}%{install_path}/lib64/%{python_lib_dir}/site-packages
+%endif
+
+# fix executability issue
+chmod +x %{buildroot}%{install_path}/lib64/%{python_lib_dir}/site-packages/%{pname}/io/arff/arffread.py
+chmod +x %{buildroot}%{install_path}/lib64/%{python_lib_dir}/site-packages/%{pname}/special/spfun_stats.py
+
+# OpenHPC module file
+%{__mkdir_p} %{buildroot}%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{python_module_prefix}%{pname}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{python_module_prefix}%{pname}/%{version}
 #%Module1.0#####################################################################
 
 proc ModulesHelp { } {
 
 puts stderr " "
-puts stderr "This module loads the %{pname} library built with the %{compiler_family} compiler"
+puts stderr "This module loads the %{python3_prefix}-%{pname} library built with the %{compiler_family} compiler"
 puts stderr "toolchain and the %{mpi_family} MPI library."
 puts stderr "\nVersion %{version}\n"
 
 }
-module-whatis "Name: %{pname} built with %{compiler_family} compiler and %{mpi_family}"
+module-whatis "Name: %{python3_prefix}-%{pname} built with %{compiler_family} compiler and %{mpi_family}"
 module-whatis "Version: %{version}"
 module-whatis "Category: python module"
 module-whatis "Description: %{summary}"
 module-whatis "URL %{url}"
 
+family                      scipy
 set     version             %{version}
 
-prepend-path    PYTHONPATH          %{install_path}/lib64/python2.7/site-packages
+prepend-path    PYTHONPATH          %{install_path}/lib64/%{python_lib_dir}/site-packages
 
 setenv          %{PNAME}_DIR        %{install_path}
 
-if [ expr [ module-info mode load ] || [module-info mode display ] ] {
-    if {  ![is-loaded fftw]  } {
-        module load fftw
-    }
-    if {  ![is-loaded numpy]  } {
-        module load numpy
-    }
-    if { [is-loaded gnu] } {
-        if { ![is-loaded mkl]  } {
-          module load mkl
-        }
-    }
-}
-
-if [ module-info mode remove ] {
-    module unload numpy
-}
+%if "%{compiler_family}" != "arm"
+depends-on fftw
+%endif
+depends-on %{python_module_prefix}numpy
 
 EOF
 
-%{__cat} << EOF > %{buildroot}/%{FSP_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{pname}/.version.%{version}
+%{__cat} << EOF > %{buildroot}/%{OHPC_MODULEDEPS}/%{compiler_family}-%{mpi_family}/%{python_module_prefix}%{pname}/.version.%{version}
 #%Module1.0#####################################################################
 ##
 ## version file for %{pname}-%{version}
@@ -249,10 +189,6 @@ EOF
 %{__mkdir_p} ${RPM_BUILD_ROOT}/%{_docdir}
 
 %files
-%defattr(-,root,root,-)
-%{FSP_HOME}
-%{FSP_PUB}
+%{OHPC_PUB}
 %doc THANKS.txt
 %doc LICENSE.txt
-
-%changelog

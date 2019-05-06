@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------bh-
-# This RPM .spec file is part of the Performance Peak project.
+# This RPM .spec file is part of the OpenHPC project.
 #
 # It may have been modified from the default version supplied by the underlying
 # release package (if available) in order to apply patches, perform customized
@@ -8,26 +8,20 @@
 #
 #----------------------------------------------------------------------------eh-
 
-%include %{_sourcedir}/FSP_macros
+%include %{_sourcedir}/OHPC_macros
 
 %define pname automake
-%{!?PROJ_DELIM:%define PROJ_DELIM %{nil}}
 
 Summary:   A GNU tool for automatically creating Makefiles
 Name:      %{pname}%{PROJ_DELIM}
-Version:   1.15
-Release:   1
-License:   GPLv2+ and GFDL
-Group:     fsp/dev-tools
+Version:   1.16.1
+Release:   1%{?dist}
+License:   GNU GPL
+Group:     %{PROJ_NAME}/dev-tools
 URL:       http://www.gnu.org/software/automake/
-DocDir:    %{FSP_PUB}/doc/contrib
-Source0:   automake-%{version}.tar.gz
-Source1:   FSP_macros
-BuildRoot: %{_tmppath}/%{pname}-%{version}-%{release}-root
+Source0:   https://ftp.gnu.org/gnu/automake/automake-%{version}.tar.gz
 
-%define debug_package %{nil}
-%{!?FSP_PUB: %define FSP_PUB /opt/fsp/pub}
-%define install_path %{FSP_PUB}/autotools
+%define install_path %{OHPC_UTILS}/autotools
 
 Requires:      autoconf%{PROJ_DELIM} >= 2.69
 BuildRequires: autoconf%{PROJ_DELIM} >= 2.69
@@ -57,21 +51,12 @@ make %{?_smp_mflags} DESTDIR=$RPM_BUILD_ROOT install
 
 %{__mkdir_p} ${RPM_BUILD_ROOT}/%{_docdir}
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
 %files
-%defattr(-,root,root,-)
-%dir %{FSP_PUB}
-%{FSP_PUB}
+%dir %{OHPC_UTILS}
+%{OHPC_UTILS}
 %doc THANKS
 %doc ChangeLog
 %doc NEWS
 %doc AUTHORS
 %doc README
 %doc COPYING
-
-%changelog
-* Mon Sep 15 2014  <karl.w.schulz@intel.com> - 
-- Initial build.
-

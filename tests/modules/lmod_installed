@@ -1,0 +1,9 @@
+#!/bin/bash
+
+. ../common/functions
+
+if [ -s ../common/TEST_ENV ];then
+    source ../common/TEST_ENV
+fi
+
+check_if_rpm_installed lmod${DELIM}
