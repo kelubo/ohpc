@@ -20,12 +20,19 @@ Release: 1%{?dist}
 Epoch: 3
 Summary: Remote shell program that uses munge authentication
 License: none
-Group: ohpc/admin
+Group: %{PROJ_NAME}/admin
 Source:    https://github.com/chaos/mrsh/archive/mrsh-2-7-1.tar.gz
+Patch0: null-terminate.patch
+Patch1: mrsh-pam-suse.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}
-BuildRequires: ncurses-devel pam-devel munge-devel-ohpc
-Requires: munge-ohpc >= 0.1-0
+BuildRequires: ncurses-devel pam-devel munge-devel%{PROJ_DELIM}
+Requires: munge%{PROJ_DELIM} >= 0.1-0
 Provides: mrsh
+
+# support re-run of autogen
+BuildRequires: autoconf
+BuildRequires: automake
+BuildRequires: libtool
 
 #%define _prefix %{OHPC_HOME}/admin/%{pname}
 
@@ -51,6 +58,10 @@ rsh compatability package for mrcp/mrlogin/mrsh
 %prep
 %setup -q -n mrsh-mrsh-2-7-1
 ./autogen.sh
+%patch0 -p1
+%if 0%{?suse_version}
+%patch1 -p1
+%endif
 
 %build
 %configure %{?_without_pam} 
@@ -84,6 +95,11 @@ sed -i 's#disable\s*= yes#disable			= no#' ${RPM_BUILD_ROOT}/etc/xinetd.d/mrshd
 %{_bindir}/mrsh
 %{_bindir}/mrlogin
 /usr/bin/mr*
+%dir /opt/ohpc/admin/mrsh
+%dir /opt/ohpc/admin/mrsh/bin
+%dir /opt/ohpc/admin/mrsh/share
+%dir /opt/ohpc/admin/mrsh/share/man
+%dir /opt/ohpc/admin/mrsh/share/man/man1
 
 %files -n %{pname}-server%{PROJ_DELIM}
 %defattr(-,root,root)
@@ -98,6 +114,11 @@ sed -i 's#disable\s*= yes#disable			= no#' ${RPM_BUILD_ROOT}/etc/xinetd.d/mrshd
 %{_mandir}/man8/mrlogind.8*
 %{_mandir}/man8/mrshd.8*
 %{_sbindir}/*
+%dir /opt/ohpc/admin/mrsh
+%dir /opt/ohpc/admin/mrsh/sbin
+%dir /opt/ohpc/admin/mrsh/share
+%dir /opt/ohpc/admin/mrsh/share/man
+%dir /opt/ohpc/admin/mrsh/share/man/man8
 
 %files -n %{pname}-rsh-compat%{PROJ_DELIM}
 %defattr(-,root,root)
@@ -112,6 +133,7 @@ sed -i 's#disable\s*= yes#disable			= no#' ${RPM_BUILD_ROOT}/etc/xinetd.d/mrshd
 %{_bindir}/rsh
 %{_bindir}/rlogin
 /usr/bin/r*
+%dir /opt/ohpc/admin/mrsh/share/man/man8
 
 %post -n %{pname}-server%{PROJ_DELIM}
 if ! grep "^mshell" /etc/services > /dev/null; then

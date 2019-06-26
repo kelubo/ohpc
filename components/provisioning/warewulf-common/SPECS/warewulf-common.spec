@@ -22,7 +22,7 @@ Summary: A suite of tools for clustering
 Version: 3.6
 Release: %{_rel}%{?dist}
 License: US Dept. of Energy (BSD-like)
-Group:   ohpc/provisioning
+Group:   %{PROJ_NAME}/provisioning
 URL:     http://warewulf.lbl.gov/
 Source0: http://warewulf.lbl.gov/downloads/releases/warewulf-common/warewulf-common-%{version}.tar.gz
 Source1: OHPC_macros
@@ -40,6 +40,10 @@ BuildRoot: %{?_tmppath}/%{pname}-%{version}-%{release}-root
 Patch1: warewulf-common.system.patch
 # 09/10/14 charles.r.baird@intel.com - patch to add mariadb as a datastore
 Patch2: warewulf-common.mariadb.patch
+# 04/14/16 charles.r.baird@intel.com - patch to add init module
+Patch3: warewulf-common.init.patch
+# 04/01/16 karl.w.schulz@intel.com - patch to enable DB transaction handling from WW trunk
+Patch4: mysql.r1978.patch
 # 05/23/14 charles.r.baird@intel.com - alternate package names for SuSE
 %if 0%{?suse_version}
 Requires: mysql perl-DBD-mysql
@@ -68,6 +72,8 @@ supporting libs.
 %setup -q -n %{pname}-%{version}
 %patch1 -p1
 %patch2 -p1
+%patch3 -p1
+%patch4 -p0
 
 
 %build

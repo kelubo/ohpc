@@ -43,6 +43,12 @@ fi
 #-----------------
 
 #------------------------------------------------------------------------------------------
+# Administrator Environment
+AC_ARG_ENABLE([admin],
+   [AS_HELP_STRING([--enable-admin],[Enable administrator environment tests (default=yes, root only)])],[],
+   [AX_OPTION_DEFAULT(type=short,enable_admin,yes)])
+AM_CONDITIONAL(ADMIN_ENABLED,test "x$enable_admin" = "xyes" ) 
+#------------------------------------------------------------------------------------------
 # Base operating system 
 AC_ARG_ENABLE([bos],
 	 [AS_HELP_STRING([--enable-bos],[Enable bos tests (default=yes, root only)])],
@@ -66,6 +72,12 @@ AC_ARG_ENABLE([lustre],
 	 [AS_HELP_STRING([--enable-lustre],[Enable Lustre utility tests (default=no, root only)])],
 	 [],[enable_lustre=no])
 AM_CONDITIONAL(LUSTRE_ENABLED,test "x$enable_lustre" = "xyes" ) 
+#------------------------------------------------------------------------------------------
+# spack
+AC_ARG_ENABLE([spack],
+	 [AS_HELP_STRING([--enable-spack],[Enable spack tests (default=yes, root only)])],
+	 [],[enable_spack=yes])
+AM_CONDITIONAL(SPACK_ENABLED,test "x$enable_spack" = "xyes" ) 
 
 #-----------------
 # User level tests
@@ -224,6 +236,12 @@ AC_ARG_ENABLE([oom],
    [AX_OPTION_DEFAULT(type=short,enable_oom,yes)])
 AM_CONDITIONAL(OOM_ENABLED,test "x$enable_oom" = "xyes" )
 #------------------------------------------------------------------------------------------
+# OCR
+AC_ARG_ENABLE([ocr],
+   [AS_HELP_STRING([--enable-ocr],[Enable OCR tests (default=yes)])],[],
+   [AX_OPTION_DEFAULT(type=long,enable_ocr,yes)])
+AM_CONDITIONAL(OCR_ENABLED,test "x$enable_ocr" = "xyes" )
+#------------------------------------------------------------------------------------------
 # OPENBLAS
 AC_ARG_ENABLE([openblas],
    [AS_HELP_STRING([--enable-openblas],[Enable OPENBLAS tests (default=yes)])],[],
@@ -332,8 +350,15 @@ AC_ARG_ENABLE([prk],
    [AX_OPTION_DEFAULT(type=long,enable_prk,yes)])
 AM_CONDITIONAL(PRK_ENABLED,test "x$enable_prk" = "xyes" )
 #------------------------------------------------------------------------------------------
+# PACKAGING
+AC_ARG_ENABLE([packaging],
+   [AS_HELP_STRING([--enable-packaging],[Enable Packaging tests (default=yes)])],[],
+   [AX_OPTION_DEFAULT(type=short,enable_packaging,yes)])
+AM_CONDITIONAL(PACKAGING_ENABLED,test "x$enable_packaging" = "xyes" )
+#------------------------------------------------------------------------------------------
 
 AC_OUTPUT( Makefile 
+	   admin/Makefile 
 	   user-env/Makefile 
 	   bos/Makefile
 	   perf-tools/intel-itac/Makefile
@@ -345,6 +370,7 @@ AC_OUTPUT( Makefile
 	   clck/Makefile
 	   lustre/Makefile
        dev-tools/easybuild/Makefile
+       admin/spack/Makefile
        dev-tools/numpy/Makefile
        dev-tools/numpy/tests/Makefile
        dev-tools/scipy/Makefile
@@ -398,10 +424,21 @@ if test "x$ROOT_ENABLED" = "x1" ; then
     else
        echo '    'Lustre client............. : disabled
     fi
+    if test "x$enable_spack" = "xyes"; then
+       echo '    'Spack..................... : enabled
+    else
+       echo '    'Spack..................... : disabled
+    fi
 
 else
 
 echo    User Environment:
+    if test "x$enable_packaging" = "xyes"; then
+       echo '    'Packaging tests........... : enabled 
+    else   
+       echo '    'Packaging tests........... : disabled 
+    fi
+
     if test "x$enable_rms_harness" = "xyes"; then
        echo '    'RMS test harness.......... : enabled 
     else   
@@ -592,6 +629,12 @@ echo    Libraries:
        echo '    'Numpy..................... : enabled
     else
        echo '    'Numpy..................... : disabled
+    fi
+
+    if test "x$enable_ocr" = "xyes"; then
+       echo '    'OCR....................... : enabled
+    else
+       echo '    'OCR....................... : disabled
     fi
 
     if test "x$enable_openblas" = "xyes"; then

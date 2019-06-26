@@ -15,19 +15,21 @@
 Name:    %{pname}%{PROJ_DELIM}
 Version: 1.22
 Release: 1%{?dist}
-Summary: Static cluster configuration database.
+Summary: Static cluster configuration database
 Group: System Environment/Base
 License: GPL
-Source: https://github.com/chaos/genders/releases/download/genders-1-22-1/%{pname}-%{version}.tar.gz#%{pname}-%{version}.tar.gz
+Source: https://github.com/chaos/genders/releases/download/genders-1-22-1/%{pname}-%{version}.tar.gz
 Requires: perl
 DocDir:    %{OHPC_PUB}/doc/contrib
-Group:     ohpc/admin
+Group:     %{PROJ_NAME}/admin
 URL: https://github.com/chaos/genders
+BuildRequires: gcc-c++
 BuildRequires: bison flex
 BuildRequires: perl(ExtUtils::MakeMaker)
 BuildRequires: python
 BuildRequires: python-devel
 BuildRoot: %{_tmppath}/%{pname}-%{version}
+Provides: %{pname} = %{version}
 
 %description
 Genders is a static cluster configuration database used for cluster
@@ -39,10 +41,10 @@ sense the variations of cluster nodes. By abstracting this information
 into a plain text file, it becomes possible to change the
 configuration of a cluster by modifying only one file.
 
-%package compat
-Summary: compatability library 
+%package -n %{pname}-compat%{PROJ_DELIM}
+Summary: Compatibility Library 
 Group: System Environment/Base
-%description compat
+%description -n %{pname}-compat%{PROJ_DELIM}
 genders API that is compatible with earlier releases of genders
 
 %{!?_with_perl_extensions: %{!?_without_perl_extensions: %define _with_perl_extensions --with-perl-extensions}}
@@ -76,6 +78,18 @@ make
 rm -rf $RPM_BUILD_ROOT
 DESTDIR="$RPM_BUILD_ROOT" make install 
 
+find "$RPM_BUILD_ROOT" -name .packlist -exec sed -i "s#$RPM_BUILD_ROOT##" {} \;
+find "$RPM_BUILD_ROOT" -name .packlist -exec sed -i '/BUILDROOT/d'        {} \;
+
+# turn off rpath check... causes failure on libgenders library
+export NO_BRP_CHECK_RPATH=true
+
+%post
+if [ -x /sbin/ldconfig ]; then /sbin/ldconfig %{_libdir}; fi
+
+%postun
+if [ -x /sbin/ldconfig ]; then /sbin/ldconfig %{_libdir}; fi
+
 %files
 %defattr(-,root,root)
 %doc README NEWS ChangeLog DISCLAIMER DISCLAIMER.UC COPYING TUTORIAL genders.sample
@@ -105,9 +119,8 @@ DESTDIR="$RPM_BUILD_ROOT" make install
 %{_libdir}/libgendersplusplus.*
 %endif
 
-%files compat
+%files -n %{pname}-compat%{PROJ_DELIM}
 %defattr(-,root,root)
 %{_mandir}/man3/gendlib*
+%dir %{_prefix}/lib/genders
 %{_prefix}/lib/genders/*
-
-

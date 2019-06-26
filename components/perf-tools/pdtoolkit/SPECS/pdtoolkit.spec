@@ -19,8 +19,13 @@
 %{!?compiler_family: %define compiler_family gnu}
 %{!?mpi_family:      %define mpi_family openmpi}
 
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
+BuildRequires: lmod%{PROJ_DELIM}
+%endif
 # Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
+BuildRequires: coreutils
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -40,12 +45,12 @@ BuildRequires: intel_licenses
 %define PNAME %(echo %{pname} | tr [a-z] [A-Z])
 
 Name: %{pname}-%{compiler_family}%{PROJ_DELIM}
-Version:        3.20
+Version:        3.21
 Release:        1
 License:        Program Database Toolkit License
 Summary:        PDT is a framework for analyzing source code
 Url:            http://www.cs.uoregon.edu/Research/pdt
-Group:          ohpc/perf-tools
+Group:          %{PROJ_NAME}/perf-tools
 Source:         https://www.cs.uoregon.edu/research/paracomp/pdtoolkit/Download/pdtoolkit-%{version}.tar.gz
 Provides:       %{name} = %{version}%{release}
 Provides:       %{name} = %{version}
@@ -53,6 +58,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 DocDir:         %{OHPC_PUB}/doc/contrib
 
 %define debug_package %{nil}
+#!BuildIgnore: post-build-checks
 
 # Default library install path
 %define install_path %{OHPC_LIBS}/%{compiler_family}/%{pname}/%version
@@ -111,6 +117,10 @@ ln -s  ../../contrib/pebil/pebil/pebil.static
 rm -f roseparse
 ln -s  ../../contrib/rose/roseparse/roseparse
 sed -i 's|%buildroot||g' ../../contrib/rose/roseparse/roseparse
+sed -i 's|/usr/local/bin/perl|/usr/bin/perl|g' ../../contrib/rose/rose-header-gen/config/depend.pl
+sed -i 's|/usr/local/bin/perl|/usr/bin/perl|g' ../../contrib/rose/rose-header-gen/config/cmp.pl
+rm -f ../../contrib/rose/rose-header-gen/config.log
+rm -f ../../contrib/rose/rose-header-gen/config.status
 rm -f smaqao
 ln -s  ../../contrib/maqao/maqao/smaqao
 popd

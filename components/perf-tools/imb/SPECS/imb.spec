@@ -23,8 +23,13 @@
 %{!?compiler_family: %define compiler_family gnu}
 %{!?mpi_family:      %define mpi_family openmpi}
 
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
+BuildRequires: lmod%{PROJ_DELIM}
+%endif
 # Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
+BuildRequires: coreutils
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -62,7 +67,7 @@ Name:      %{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 Version:   4.1
 Release:   1
 License:   CPL
-Group:     ohpc/perf-tools
+Group:     %{PROJ_NAME}/perf-tools
 URL:       https://software.intel.com/en-us/articles/intel-mpi-benchmarks
 Source0:   %{PNAME}_%{version}.tgz
 Source1:   OHPC_macros

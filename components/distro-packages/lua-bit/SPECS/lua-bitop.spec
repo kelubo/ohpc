@@ -8,6 +8,7 @@
 #
 #----------------------------------------------------------------------------eh-
 
+%include %{_sourcedir}/OHPC_macros
 %{!?PROJ_DELIM: %define PROJ_DELIM -ohpc}
 
 %define pname lua-bit
@@ -25,7 +26,7 @@ Name:           %{pname}%{PROJ_DELIM}
 Version:        1.0.2
 Release:        1%{?dist}
 Summary:        Module for Lua which adds bitwise operations on numbers
-Group:          ohpc/distro-packages
+Group:          %{PROJ_NAME}/distro-packages
 License:        MIT
 Url:            http://bitop.luajit.org
 Source0:        http://bitop.luajit.org/download/LuaBitOp-%{version}.tar.gz

@@ -22,11 +22,12 @@ Name:    %{pname}%{PROJ_DELIM}
 Version: 3.6
 Release: %{_rel}%{?dist}
 License: US Dept. of Energy (BSD-like)
-Group:   ohpc/provisioning
+Group:   %{PROJ_NAME}/provisioning
 URL:     http://warewulf.lbl.gov/
 Source:  http://warewulf.lbl.gov/downloads/releases/warewulf-vnfs/warewulf-vnfs-%{version}.tar.gz
 ExclusiveOS: linux
 Requires: warewulf-common%{PROJ_DELIM}
+Requires: pigz
 BuildRequires: warewulf-common%{PROJ_DELIM}
 Conflicts: warewulf < 3
 %if 0%{?sles_version} || 0%{?suse_version}
@@ -51,6 +52,11 @@ Patch4: warewulf-vnfs.bootstrap.patch
 Source1: centos-7.tmpl
 # 03/13/15 karl.w.schulz@intel.com - honor local proxy setting if defined (rhel)
 Patch5: rhel-proxy.patch
+Patch6: warewulf-vnfs.pigz.patch
+# 03/30/16 karl.w.schulz@intel.com - add support for ecdsa host keys
+Patch7: warewulf-vnfs.ecdsa.patch
+# 04/14/16 karl.w.schulz@intel.com - add init class
+Patch8: warewulf-vnfs.init.patch
 
 
 %description
@@ -71,6 +77,8 @@ Virtual Node FileSystem objects.
 %patch3 -p1
 %patch4 -p1
 %patch5 -p1
+%patch6 -p1
+%patch7 -p3
 
 
 %build

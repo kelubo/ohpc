@@ -38,8 +38,13 @@
 %{!?compiler_family: %define compiler_family gnu}
 %{!?mpi_family:      %define mpi_family openmpi}
 
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
+BuildRequires: lmod%{PROJ_DELIM}
+%endif
 # Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
+BuildRequires: coreutils
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -78,15 +83,15 @@ Requires:      openmpi-%{compiler_family}%{PROJ_DELIM}
 %define libname libsuperlu_dist
 
 Name:           %{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
-Version:        4.1
+Version:        4.2
 Release:        0
 Summary:        A general purpose library for the direct solution of linear equations
 License:        BSD-3-Clause
-Group:          ohpc/parallel-libs
+Group:          %{PROJ_NAME}/parallel-libs
 URL:            http://crd-legacy.lbl.gov/~xiaoye/SuperLU/
 Source0:        http://crd-legacy.lbl.gov/~xiaoye/SuperLU/superlu_dist_%{version}.tar.gz
 Patch0:         superlu_dist-4.1-sequence-point.patch
-Patch1:         superlu_dist-4.1-make.patch
+Patch1:         superlu_dist-4.2-make.patch
 Patch2:         superlu_dist-4.1-example-no-return-in-non-void.patch
 Patch3:         superlu_dist-4.1-parmetis.patch
 BuildRequires:  metis-%{compiler_family}%{PROJ_DELIM}

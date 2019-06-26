@@ -23,7 +23,7 @@ Summary: Warewulf - Provisioning Module
 Version: 3.6
 Release: %{_rel}%{?dist}
 License: US Dept. of Energy (BSD-like)
-Group:   ohpc/provisioning
+Group:   %{PROJ_NAME}/provisioning
 URL:     http://warewulf.lbl.gov/
 Source0: http://warewulf.lbl.gov/downloads/releases/warewulf-provision/warewulf-provision-%{version}.tar.gz
 Source1: OHPC_macros
@@ -38,6 +38,9 @@ DocDir: %{OHPC_PUB}/doc/contrib
 Patch1: warewulf-provision.busybox.patch.bz2
 Patch2: warewulf-provision.httpdconfdir.patch
 Patch3: warewulf-provision.dhcpd.patch
+Patch4: warewulf-provision.init.patch
+Patch5: update_file_delay.patch
+Patch6: warewulf-provision.mkbootable.patch
 
 %description
 Warewulf >= 3 is a set of utilities designed to better enable
@@ -52,14 +55,14 @@ administrative tools.  To actually provision systems, the
 
 %package -n %{pname}-server%{PROJ_DELIM}
 Summary: Warewulf - Provisioning Module - Server
-Group: ohpc/provisioning
+Group: %{PROJ_NAME}/provisioning
 Requires: %{pname}%{PROJ_DELIM} = %{version}-%{release}
 
 # 07/22/14 karl.w.schulz@intel.com - differentiate requirements per Base OS
 %if 0%{?sles_version} || 0%{?suse_version}
-Requires: apache2 apache2-mod_perl tftp dhcp-server
+Requires: apache2 apache2-mod_perl tftp dhcp-server xinetd
 %else
-Requires: mod_perl httpd tftp-server dhcp
+Requires: mod_perl httpd tftp-server dhcp xinetd
 %endif
 
 # charles.r.baird@intel.com - required to determine where to stick warewulf-httpd.conf
@@ -104,7 +107,9 @@ available the included GPL software.
 %patch1 -p1
 %patch2 -p1
 %patch3 -p1
-
+%patch4 -p1
+%patch5 -p1
+%patch6 -p1
 
 %build
 %configure --localstatedir=%{wwpkgdir}

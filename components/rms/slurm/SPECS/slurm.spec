@@ -9,6 +9,7 @@
 #----------------------------------------------------------------------------eh-
 
 %include %{_sourcedir}/OHPC_macros
+%include %{_sourcedir}/rpmmacros
 %{!?PROJ_DELIM: %define PROJ_DELIM -ohpc}
 
 %define pname slurm
@@ -100,14 +101,14 @@
 
 Name:    %{pname}%{PROJ_DELIM}
 
-Version: 15.08.4
-%define ver_exp 15-08-4-1
+Version: 15.08.7
+%define ver_exp 15-08-7-1
 
 Release:   %{?dist}
 Summary:   Slurm Workload Manager
 
 License:   GPL
-Group:     ohpc/rms
+Group:     %{PROJ_NAME}/rms
 Source:    https://github.com/SchedMD/slurm/archive/%{pname}-%{ver_exp}.tar.gz
 #Source:    http://www.schedmd.com/download/archive/%{pname}-%{version}.tar.bz2
 Source1:   OHPC_macros
@@ -167,13 +168,21 @@ BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 %endif
 %endif
 
-%if %{slurm_with mysql}
+#%if %{slurm_with mysql}
 %if 0%{?suse_version}
+%if 0%{?suse_version} >= 1200
+BuildRequires: libmysqlclient-devel
+%else
 BuildRequires: libmysql5
+%endif
+%else
+%if 0%{?rhel_version} >= 700 || 0%{?centos_version} >= 700
+BuildRequires: mariadb-devel >= 5.0.0
 %else
 BuildRequires: mysql-devel >= 5.0.0
 %endif
 %endif
+#%endif
 
 %if %{slurm_with cray_alps}
 BuildRequires: mysql-devel
@@ -271,7 +280,7 @@ scheduling and accounting modules
 
 %package -n %{pname}-perlapi%{PROJ_DELIM}
 Summary: Perl API to Slurm
-Group: ohpc/rms
+Group: %{PROJ_NAME}/rms
 Requires: %{pname}%{PROJ_DELIM}
 %description -n %{pname}-perlapi%{PROJ_DELIM}
 Perl API package for Slurm.  This package includes the perl API to provide a
@@ -279,7 +288,7 @@ helpful interface to Slurm through Perl
 
 %package -n %{pname}-devel%{PROJ_DELIM}
 Summary: Development package for Slurm
-Group: ohpc/rms
+Group: %{PROJ_NAME}/rms
 Requires: %{pname}%{PROJ_DELIM}
 %if 0%{?suse_version}
 BuildRequires:  pkg-config
@@ -294,7 +303,7 @@ and static libraries for the Slurm API
 %if %{slurm_with auth_none}
 %package -n %{pname}-auth-none%{PROJ_DELIM}
 Summary: Slurm auth NULL implementation (no authentication)
-Group: ohpc/rms
+Group: %{PROJ_NAME}/rms
 Requires: %{pname}%{PROJ_DELIM}
 %description -n %{pname}-auth-none%{PROJ_DELIM}
 Slurm NULL authentication module
@@ -303,7 +312,7 @@ Slurm NULL authentication module
 %if %{slurm_with authd}
 %package -n %{pname}-auth-authd%{PROJ_DELIM}
 Summary: Slurm auth implementation using Brent Chun's authd
-Group: ohpc/rms
+Group: %{PROJ_NAME}/rms
 Requires: %{pname}%{PROJ_DELIM} authd
 %description -n %{pname}-auth-authd%{PROJ_DELIM}
 Slurm authentication module for Brent Chun's authd. Used to
@@ -315,7 +324,7 @@ authenticate user originating an RPC
 %if %{slurm_with munge}
 %package -n %{pname}-munge%{PROJ_DELIM}
 Summary: Slurm authentication and crypto implementation using Munge
-Group: ohpc/rms
+Group: %{PROJ_NAME}/rms
 Requires: %{pname}%{PROJ_DELIM} munge%{PROJ_DELIM}
 BuildRequires: munge-devel%{PROJ_DELIM} munge-libs%{PROJ_DELIM}
 Obsoletes: slurm-auth-munge
@@ -327,29 +336,29 @@ authenticate user originating an RPC, digitally sign and/or encrypt messages
 %if %{slurm_with bluegene}
 %package bluegene
 Summary: Slurm interfaces to IBM Blue Gene system
-Group: ohpc/rms
-Requires: slurm
+Group: %{PROJ_NAME}/rms
+Requires: %{pname}%{PROJ_DELIM}
 %description bluegene
 Slurm plugin interfaces to IBM Blue Gene system
 %endif
 
 %package -n %{pname}-slurmdbd%{PROJ_DELIM}
 Summary: Slurm database daemon
-Group: ohpc/rms
-Requires: slurm-plugins%{PROJ_DELIM} slurm-sql%{PROJ_DELIM}
+Group: %{PROJ_NAME}/rms
+Requires: %{pname}-plugins%{PROJ_DELIM} %{pname}-sql%{PROJ_DELIM}
 %description -n %{pname}-slurmdbd%{PROJ_DELIM}
 Slurm database daemon. Used to accept and process database RPCs and upload
 database changes to slurmctld daemons on each cluster
 
 %package -n %{pname}-sql%{PROJ_DELIM}
 Summary: Slurm SQL support
-Group: ohpc/rms
+Group: %{PROJ_NAME}/rms
 %description -n %{pname}-sql%{PROJ_DELIM}
 Slurm SQL support. Contains interfaces to MySQL.
 
 %package -n %{pname}-plugins%{PROJ_DELIM}
 Summary: Slurm plugins (loadable shared objects)
-Group: ohpc/rms
+Group: %{PROJ_NAME}/rms
 Requires: munge-libs%{PROJ_DELIM}
 %description -n %{pname}-plugins%{PROJ_DELIM}
 Slurm plugins (loadable shared objects) supporting a wide variety of
@@ -359,31 +368,31 @@ are in other packages
 
 %package -n %{pname}-torque%{PROJ_DELIM}
 Summary: Torque/PBS wrappers for transition from Torque/PBS to Slurm
-Group: ohpc/rms
-Requires: slurm-perlapi
+Group: %{PROJ_NAME}/rms
+Requires: %{pname}-perlapi%{PROJ_DELIM}
 %description -n %{pname}-torque%{PROJ_DELIM}
 Torque wrapper scripts used for helping migrate from Torque/PBS to Slurm
 
 %package -n %{pname}-sjobexit%{PROJ_DELIM}
 Summary: Slurm job exit code management tools
-Group: ohpc/rms
-Requires: slurm-perlapi%{PROJ_DELIM}
+Group: %{PROJ_NAME}/rms
+Requires: %{pname}-perlapi%{PROJ_DELIM}
 %description -n %{pname}-sjobexit%{PROJ_DELIM}
 Slurm job exit code management tools. Enables users to alter job exit code
 information for completed jobs
 
 %package -n %{pname}-slurmdb-direct%{PROJ_DELIM}
 Summary: Wrappers to write directly to the slurmdb
-Group: ohpc/rms
-Requires: slurm-perlapi%{PROJ_DELIM}
+Group: %{PROJ_NAME}/rms
+Requires: %{pname}-perlapi%{PROJ_DELIM}
 %description -n %{pname}-slurmdb-direct%{PROJ_DELIM}
 Wrappers to write directly to the slurmdb
 
 %if %{slurm_with aix}
 %package aix
 Summary: Slurm interfaces to IBM AIX
-Group: ohpc/rms
-Requires: slurm
+Group: %{PROJ_NAME}/rms
+Requires: %{pname}{PROJ_DELIM}
 BuildRequires: proctrack >= 3
 Obsoletes: slurm-aix-federation
 %description aix
@@ -393,8 +402,8 @@ Slurm interfaces for IBM AIX systems
 %if %{slurm_with percs}
 %package percs
 Summary: Slurm plugins to run on an IBM PERCS system
-Group: ohpc/rms
-Requires: slurm nrt
+Group: %{PROJ_NAME}/rms
+Requires: %{pname}%{PROJ_DELIM} nrt
 BuildRequires: nrt
 %description percs
 Slurm plugins to run on an IBM PERCS system, POE interface and NRT switch plugin
@@ -404,8 +413,8 @@ Slurm plugins to run on an IBM PERCS system, POE interface and NRT switch plugin
 %if %{slurm_with sgijob}
 %package proctrack-sgi-job
 Summary: Slurm process tracking plugin for SGI job containers
-Group: ohpc/rms
-Requires: slurm
+Group: %{PROJ_NAME}/rms
+Requires: %{pname}%{PROJ_DELIM}
 BuildRequires: job
 %description proctrack-sgi-job
 Slurm process tracking plugin for SGI job containers
@@ -415,8 +424,8 @@ Slurm process tracking plugin for SGI job containers
 %if %{slurm_with lua}
 %package -n %{pname}-lua%{PROJ_DELIM}
 Summary: Slurm lua bindings
-Group: ohpc/rms
-Requires: slurm%{PROJ_DELIM} lua
+Group: %{PROJ_NAME}/rms
+Requires: %{pname}%{PROJ_DELIM} lua
 BuildRequires: lua-devel
 %description -n %{pname}-lua%{PROJ_DELIM}
 Slurm lua bindings
@@ -425,8 +434,8 @@ Includes the Slurm proctrack/lua and job_submit/lua plugin
 
 %package -n %{pname}-sjstat%{PROJ_DELIM}
 Summary: Perl tool to print Slurm job state information
-Group: ohpc/rms
-Requires: slurm%{PROJ_DELIM}
+Group: %{PROJ_NAME}/rms
+Requires: %{pname}%{PROJ_DELIM}
 %description -n %{pname}-sjstat%{PROJ_DELIM}
 Perl tool to print Slurm job state information. The output is designed to give
 information on the resource usage and availablilty, as well as information
@@ -437,8 +446,8 @@ utilites will provide more information and greater depth of understanding
 %if %{slurm_with pam}
 %package -n %{pname}-pam_slurm%{PROJ_DELIM}
 Summary: PAM module for restricting access to compute nodes via Slurm
-Group: ohpc/rms
-Requires: slurm%{PROJ_DELIM} slurm-devel%{PROJ_DELIM}
+Group: %{PROJ_NAME}/rms
+Requires: %{pname}%{PROJ_DELIM} %{pname}-devel%{PROJ_DELIM}
 BuildRequires: pam-devel
 Obsoletes: pam_slurm
 %description -n %{pname}-pam_slurm%{PROJ_DELIM}
@@ -451,8 +460,8 @@ according to the Slurm
 %if %{slurm_with blcr}
 %package -n %{pname}-blcr%{PROJ_DELIM}
 Summary: Allows Slurm to use Berkeley Lab Checkpoint/Restart
-Group: ohpc/rms
-Requires: slurm%{PROJ_DELIM}
+Group: %{PROJ_NAME}/rms
+Requires: %{pname}%{PROJ_DELIM}
 %description -n %{pname}-blcr%{PROJ_DELIM}
 Gives the ability for Slurm to use Berkeley Lab Checkpoint/Restart
 %endif
@@ -466,7 +475,7 @@ Gives the ability for Slurm to use Berkeley Lab Checkpoint/Restart
 ### patch1
 ### patch2
 ### patch3
-%patch4
+### patch4
 
 %build
 %configure \

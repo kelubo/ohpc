@@ -21,8 +21,12 @@
 
 %{!?compiler_family: %define compiler_family gnu}
 
-# Compiler dependencies
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
 BuildRequires: lmod%{PROJ_DELIM}
+%endif
+# Compiler dependencies
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -43,10 +47,10 @@ BuildRequires: intel_licenses
 
 Summary:   GNU Scientific Library (GSL)
 Name:      %{pname}-%{compiler_family}%{PROJ_DELIM}
-Version:   1.16
+Version:   2.1
 Release:   1
 License:   GPL
-Group:     ohpc/serial-libs
+Group:     %{PROJ_NAME}/serial-libs
 URL:       http://www.gnu.org/software/gsl
 Source0:   https://ftp.gnu.org/gnu/%{pname}/%{pname}-%{version}.tar.gz
 Source1:   OHPC_macros

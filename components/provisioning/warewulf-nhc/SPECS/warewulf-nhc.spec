@@ -25,7 +25,7 @@ Summary: Warewulf Node Health Check System
 Version: 1.4.1
 Release: 1%{?dist}
 License: US Dept. of Energy (BSD-like)
-Group:   ohpc/provisioning
+Group:   %{PROJ_NAME}/provisioning
 URL:     http://warewulf.lbl.gov/
 Source0: http://warewulf.lbl.gov/downloads/releases/warewulf-nhc/warewulf-nhc-%{version}.tar.gz
 Source1: OHPC_macros
@@ -75,7 +75,7 @@ test "$RPM_BUILD_ROOT" != "/" && %{__rm} -rf $RPM_BUILD_ROOT
 %files
 %defattr(-, root, root)
 %{OHPC_PUB}
-%doc COPYING ChangeLog LICENSE nhc.conf contrib/nhc.cron
+%doc COPYING ChangeLog LICENSE
 %dir %{_sysconfdir}/%{sname}/
 %dir %{_localstatedir}/lib/%{sname}/
 %dir %{_localstatedir}/run/%{sname}/

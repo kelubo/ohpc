@@ -16,20 +16,24 @@
 \usepackage{colortbl}
 \usepackage{tcolorbox}
 \usepackage{multicol}
+\usepackage{etoolbox}
 %%%\usepackage[T1]{fontenc}
 \tcbuselibrary{skins}
 
 % for non-released DRAFT - comment out for GA release
-%% \usepackage[firstpage]{draftwatermark}
-%% \SetWatermarkText{DRAFT / PRE-RELEASE}
-%% \SetWatermarkScale{1.45}
+%\usepackage[firstpage]{draftwatermark}
+%%% \usepackage{draftwatermark}
+%%% \SetWatermarkText{DRAFT / PRE-RELEASE}
+%%% \SetWatermarkScale{1.45}
 
 % ----------- Variables to change per release -------------
 
-\newcommand{\OHPCVersion}{1.0}
+\newcommand{\OHPCVersion}{1.1}
 
 % ---------------------------------------------------------
 
+% Booleans for os-specific latex formatting
+\newtoggle{isCentOS}
 
 \pagestyle{fancy}
 \setlength\headheight{59pt}
@@ -72,19 +76,25 @@
 
 
 %\newcommand{\Intel}{{Intel\raisebox{0.39ex}{\scriptsize{\textregistered}}}}
+\newcommand{\clustershell}{ClusterShell}
+\newcommand{\conman}{ConMan}
+\newcommand{\FFTW}{FFTW}
+\newcommand{\Ganglia}{Ganglia}
+\newcommand{\genders}{\emph{genders}}
+\newcommand{\GNU}{GNU}
+\newcommand{\hdffive}{HDF5}
+\newcommand{\InfiniBand}{InfiniBand}
 \newcommand{\Intel}{Intel}
 \newcommand{\IntelR}{Intel\raisebox{0.39ex}{\scriptsize{\textregistered}}}
-\newcommand{\OHPC}{OpenHPC}
 \newcommand{\Linux}{Linux}
-\newcommand{\GNU}{GNU}
-\newcommand{\NFS}{NFS}
-\newcommand{\InfiniBand}{InfiniBand}
-\newcommand{\SLURM}{Slurm}
-\newcommand{\FFTW}{FFTW}
-\newcommand{\ORCM}{ORCM}
-\newcommand{\hdffive}{HDF5}
-\newcommand{\Warewulf}{Warewulf}
-\newcommand{\Lustre}{Lustre}
-\newcommand{\Nagios}{Nagios}
-\newcommand{\Ganglia}{Ganglia}
 \newcommand{\LosF}{\emph{LosF*}}
+\newcommand{\Lustre}{Lustre}
+\newcommand{\mrsh}{\emph{mrsh}}
+\newcommand{\MUNGE}{\emph{munge}}
+\newcommand{\Nagios}{Nagios}
+\newcommand{\NFS}{NFS}
+\newcommand{\OHPC}{OpenHPC}
+\newcommand{\ORCM}{ORCM}
+\newcommand{\powerman}{\emph{powerman}}
+\newcommand{\SLURM}{Slurm}
+\newcommand{\Warewulf}{Warewulf}

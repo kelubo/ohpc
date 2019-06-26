@@ -39,8 +39,13 @@
 %{!?compiler_family: %define compiler_family gnu}
 %{!?mpi_family:      %define mpi_family openmpi}
 
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
+BuildRequires: lmod%{PROJ_DELIM}
+%endif
 # Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
+BuildRequires: coreutils
 %if %{compiler_family} == gnu
 %define toolset gcc
 BuildRequires: gnu-compilers%{PROJ_DELIM}
@@ -80,13 +85,13 @@ Requires:      openmpi-%{compiler_family}%{PROJ_DELIM}
 
 Summary:	Boost free peer-reviewed portable C++ source libraries
 Name:		%{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
-Version:        1.59.0
+Version:        1.60.0
 
-%define version_exp 1_59_0
+%define version_exp 1_60_0
 
 Release:        0
 License:        BSL-1.0
-Group:		ohpc/parallel-libs
+Group:		%{PROJ_NAME}/parallel-libs
 Url:            http://www.boost.org
 Source0:        http://sourceforge.net/projects/boost/files/boost/%{version}/boost_%{version_exp}.tar.gz
 Source1:        boost-rpmlintrc
@@ -105,6 +110,11 @@ BuildRequires:  libicu-devel >= 4.4
 BuildRequires:  python-devel
 BuildRequires:  xorg-x11-devel
 BuildRequires:  zlib-devel
+
+# (Tron: 3/4/16) Add libicu dependency for SLES12sp1 as the distro does not seem to have it by default and some tests are failing
+%if 0%{?suse_version}
+Requires: libicu-devel >= 4.4
+%endif
 
 #!BuildIgnore: post-build-checks rpmlint-Factory
 

@@ -20,7 +20,7 @@ Release: %{_rel}
 Summary: PowerMan - centralized power control for clusters
 License: GPL
 DocDir:    %{OHPC_PUB}/doc/contrib
-Group:     ohpc/admin
+Group:     %{PROJ_NAME}/admin
 Url: http://code.google.com/p/powerman/
 #Source0: %{pname}-%{version}.tar.gz
 Source0: https://github.com/chaos/%{pname}/releases/download/%{version}/%{pname}-%{version}.tar.gz#%{pname}-%{version}.tar.gz
@@ -51,7 +51,7 @@ BuildRoot: %{_tmppath}/%{pname}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: tcp_wrappers-devel
 %endif
 %if 0%{?_with_genders}
-BuildRequires: genders
+BuildRequires: genders%{PROJ_DELIM}
 %endif
 %if 0%{?_with_httppower}
 BuildRequires: curl-devel
@@ -61,12 +61,12 @@ BuildRequires: net-snmp-devel
 %endif
 BuildRequires: systemd
 
-%package devel
+%package -n %{pname}-devel%{PROJ_DELIM}
 Requires: %{name} = %{version}-%{release}
 Summary: Headers and libraries for developing applications using PowerMan
 Group: Development/Libraries
 
-%package libs
+%package -n %{pname}-libs%{PROJ_DELIM}
 Requires: %{name} = %{version}-%{release}
 Summary: Libraries for applications using PowerMan
 Group: System Environment/Libraries
@@ -76,10 +76,10 @@ PowerMan is a tool for manipulating remote power control (RPC) devices from a
 central location. Several RPC varieties are supported natively by PowerMan and 
 Expect-like configurability simplifies the addition of new devices.
 
-%description devel
+%description -n %{pname}-devel%{PROJ_DELIM}
 A header file and static library for developing applications using PowerMan.
 
-%description libs
+%description -n %{pname}-libs%{PROJ_DELIM}
 A shared library for applications using PowerMan.
 
 %prep
@@ -98,13 +98,16 @@ make
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT 
 
+#drop local state dir to avoid making systemd angry when it creates the statedir on start
+rm -rf $RPM_BUILD_ROOT/%{_localstatedir}
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %post
 /bin/systemctl enable powerman > /dev/null 2>&1 || :
 
-%post libs
+%post -n %{pname}-libs%{PROJ_DELIM}
 if [ -x /sbin/ldconfig ]; then /sbin/ldconfig %{_libdir}; fi
 
 %preun
@@ -118,7 +121,7 @@ if [ "$1" -ge 1 ]; then
   systemctl try-restart powerman >/dev/null 2>&1 || :
 fi
 
-%postun libs
+%postun -n %{pname}-libs%{PROJ_DELIM}
 if [ -x /sbin/ldconfig ]; then /sbin/ldconfig %{_libdir}; fi
 
 %files
@@ -145,10 +148,12 @@ if [ -x /sbin/ldconfig ]; then /sbin/ldconfig %{_libdir}; fi
 %{_mandir}/*5/*
 %{_mandir}/*8/*
 %{_libdir}/stonith/plugins/external/powerman
-%{_unitdir}/powerman.service
-%dir %attr(0755,daemon,root) %config %{_localstatedir}/run/powerman
+%dir %attr(0755,daemon,root) %{_libdir}/stonith
+%dir %attr(0755,daemon,root) %{_libdir}/stonith/plugins
+%dir %attr(0755,daemon,root) %{_libdir}/stonith/plugins/external
+%attr(0644,root,root) %{_unitdir}/powerman.service
 
-%files devel
+%files -n %{pname}-devel%{PROJ_DELIM}
 %defattr(-,root,root,0755)
 %{_includedir}/*
 %{_libdir}/*.la
@@ -159,7 +164,7 @@ if [ -x /sbin/ldconfig ]; then /sbin/ldconfig %{_libdir}; fi
 %{_libdir}/pkgconfig/*
 %endif
 
-%files libs
+%files -n %{pname}-libs%{PROJ_DELIM}
 %defattr(-,root,root,0755)
 %ifnos aix5.3 aix5.2 aix5.1 aix5.0 aix4.3
 %{_libdir}/*.so.*

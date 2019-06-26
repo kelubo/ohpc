@@ -23,8 +23,13 @@
 %{!?compiler_family: %define compiler_family gnu}
 %{!?mpi_family:      %define mpi_family openmpi}
 
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
+BuildRequires: lmod%{PROJ_DELIM}
+%endif
 # Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
+BuildRequires: coreutils
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -62,7 +67,7 @@ Name:      %{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 Version:   3.3.4
 Release:   1
 License:   GPLv2+
-Group:     ohpc/parallel-libs
+Group:     %{PROJ_NAME}/parallel-libs
 URL:       http://www.fftw.org
 Source0:   http://www.fftw.org/fftw-%{version}.tar.gz
 Source1:   OHPC_macros

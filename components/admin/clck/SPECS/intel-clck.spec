@@ -13,11 +13,11 @@
 
 Summary:   Intel(R) Cluster Checker
 Name:      intel-clck%{PROJ_DELIM}
-Version:   3.0.1
+Version:   3.1.2
 Release:   1
 License:   Intel
 URL:       https://clusterready.intel.com/intel-cluster-checker/
-Group:     ohpc/admin
+Group:     %{PROJ_NAME}/admin
 BuildArch: x86_64
 Source1:   OHPC_macros
 Source2:   OHPC_mod_generator.sh
@@ -52,7 +52,7 @@ cd %{buildroot}
 %{__tar} xfz $RPM_SOURCE_DIR/intel-clck%{PROJ_DELIM}-%{version}.tar.gz
 
 # OpenHPC patches
-%{__patch} -p0 < %{SOURCE3}
+# %%{__patch} -p0 < %{SOURCE3}
 
 cd -
 

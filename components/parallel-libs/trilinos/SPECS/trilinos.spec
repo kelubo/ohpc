@@ -23,8 +23,13 @@
 %{!?compiler_family: %define compiler_family gnu}
 %{!?mpi_family:      %define mpi_family openmpi}
 
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
+BuildRequires: lmod%{PROJ_DELIM}
+%endif
 # Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
+BuildRequires: coreutils
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -61,11 +66,11 @@ Requires:      openmpi-%{compiler_family}%{PROJ_DELIM}
 %define PNAME %(echo %{pname} | tr [a-z] [A-Z])
 
 Name:           %{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
-Version:        12.2.1
+Version:        12.4.2
 Release:        0
 Summary:        A collection of libraries of numerical algorithms
 License:        LGPL-2.0
-Group:          ohpc/parallel-libs
+Group:          %{PROJ_NAME}/parallel-libs
 Url:            http://trilinos.sandia.gov/index.html
 Source0:        http://trilinos.csbsju.edu/download/files/trilinos-%{version}-Source.tar.bz2
 Patch0:         trilinos-11.14.3-no-return-in-non-void.patch

@@ -21,8 +21,12 @@
 
 %{!?compiler_family: %define compiler_family gnu}
 
-# Compiler dependencies
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
 BuildRequires: lmod%{PROJ_DELIM}
+%endif
+# Compiler dependencies
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -46,13 +50,13 @@ BuildRequires: intel_licenses
 
 Summary:   A powerful implementation of MPI
 Name:      %{pname}-%{compiler_family}%{PROJ_DELIM}
-Version:   1.8.8
+Version:   1.10.1
 Release:   1
 License:   BSD-3-Clause
-Group:     ohpc/mpi-families
+Group:     %{PROJ_NAME}/mpi-families
 URL:       http://www.open-mpi.org
 DocDir:    %{OHPC_PUB}/doc/contrib
-Source0:   http://www.open-mpi.org/software/ompi/v1.8/downloads/%{pname}-%{version}.tar.bz2
+Source0:   http://www.open-mpi.org/software/ompi/v1.10/downloads/%{pname}-%{version}.tar.bz2
 Source1:   OHPC_macros
 Source2:   OHPC_setup_compiler
 #Patch1:    %{pname}-no_date_and_time.patch
@@ -118,7 +122,7 @@ Open MPI jobs.
 export OHPC_COMPILER_FAMILY=%{compiler_family}
 . %{_sourcedir}/OHPC_setup_compiler
 
-BASEFLAGS="--prefix=%{install_path} --disable-static --enable-builtin-atomics"
+BASEFLAGS="--prefix=%{install_path} --disable-static --enable-builtin-atomics --with-sge"
 %if %{with_psm}
   BASEFLAGS="$BASEFLAGS --with-psm"
 %endif

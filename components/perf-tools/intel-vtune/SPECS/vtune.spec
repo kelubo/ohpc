@@ -15,19 +15,18 @@
 
 Summary:   Intel(R) VTune(TM) Amplifier XE
 Name:      intel-%{pname}%{PROJ_DELIM}
-Version:   16.1.1.434111
+Version:   16.2.0.444464
 Source0:   intel-%{pname}-amplifier%{PROJ_DELIM}-%{version}.tar.gz
 Source1:   OHPC_macros
 Source2:   modfile-ohpc.input
 Release:   1
-License:   Copyright (C) 2011-2015 Intel Corporation. All rights reserved.
+License:   Copyright (C) 2011-2016 Intel Corporation. All rights reserved.
 Vendor:    Intel Corporation
 URL:       https://software.intel.com/en-us/intel-parallel-studio-xe
-Group:     ohpc/perf-tools
+Group:     %{PROJ_NAME}/perf-tools
 BuildArch: x86_64
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 AutoReq:   no
-#AutoReqProv: no
 
 %define __spec_install_post /usr/lib/rpm/brp-strip-comment-note /bin/true
 %define __spec_install_post /usr/lib/rpm/brp-compress /bin/true
@@ -88,7 +87,6 @@ EOF
 # Append with machine-generated contribution for modulefile settings
 %{__cat} %{SOURCE2} >> %{buildroot}/%{OHPC_MODULES}/%{pname}/%{version}
 
-                       
 %{__cat} << EOF > %{buildroot}/%{OHPC_MODULES}/%{pname}/.version.%{version}
 #%Module1.0#####################################################################
 set     ModulesVersion      "%{version}"

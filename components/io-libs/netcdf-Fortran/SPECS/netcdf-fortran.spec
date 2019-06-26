@@ -40,8 +40,12 @@
 %{!?compiler_family: %define compiler_family gnu}
 %{!?mpi_family:      %define mpi_family openmpi}
 
-# Compiler dependencies
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
 BuildRequires: lmod%{PROJ_DELIM}
+%endif
+# Compiler dependencies
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -79,8 +83,8 @@ Requires:      openmpi-%{compiler_family}%{PROJ_DELIM}
 Name:           %{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 Summary:        Fortran Libraries for the Unidata network Common Data Form
 License:        NetCDF
-Group:          ohpc/io-libs
-Version:        4.4.2
+Group:          %{PROJ_NAME}/io-libs
+Version:        4.4.3
 Release:        1
 Url:            http://www.unidata.ucar.edu/software/netcdf/
 DocDir:         %{OHPC_PUB}/doc/contrib

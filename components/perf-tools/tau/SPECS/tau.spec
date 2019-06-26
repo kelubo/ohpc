@@ -19,8 +19,13 @@
 %{!?mpi_family: %define mpi_family openmpi}
 %{!?PROJ_DELIM: %define PROJ_DELIM -ohpc}
 
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
+BuildRequires: lmod%{PROJ_DELIM}
+%endif
 # Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
+BuildRequires: coreutils
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -56,11 +61,11 @@ Requires:      openmpi-%{compiler_family}%{PROJ_DELIM}
 
 Name: %{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 
-Version:   2.24.1
+Version:   2.25
 Release:   1%{?dist}
 Summary:   Tuning and Analysis Utilities Profiling Package
 License:   Tuning and Analysis Utilities License
-Group:     ohpc/perf-tools
+Group:     %{PROJ_NAME}/perf-tools
 Url:       http://www.cs.uoregon.edu/research/tau/home.php
 Source0:   https://www.cs.uoregon.edu/research/tau/tau_releases/tau-%{version}.tar.gz
 Provides:  lib%PNAME.so()(64bit)

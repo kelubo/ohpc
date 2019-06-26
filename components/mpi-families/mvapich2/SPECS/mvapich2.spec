@@ -24,8 +24,12 @@
 
 %{!?compiler_family: %define compiler_family gnu}
 
-# Compiler dependencies
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
 BuildRequires: lmod%{PROJ_DELIM}
+%endif
+# Compiler dependencies
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -56,7 +60,7 @@ Name:      %{pname}-%{compiler_family}%{PROJ_DELIM}
 Version:   2.1
 Release:   1
 License:   BSD
-Group:     ohpc/mpi-families
+Group:     %{PROJ_NAME}/mpi-families
 URL:       http://mvapich.cse.ohio-state.edu/overview/mvapich2/
 DocDir:    %{OHPC_PUB}/doc/contrib
 Source0:   http://mvapich.cse.ohio-state.edu/download/mvapich/mv2/%{pname}-%{version}.tar.gz
@@ -66,6 +70,8 @@ Source2:   OHPC_setup_compiler
 # karl.w.schulz@intel.com (09/08/2015)
 %global _default_patch_fuzz 2
 Patch0:    winfree.patch
+# karl.w.schulz@intel.com (04/13/2016)
+Patch1:    minit.patch
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
@@ -82,6 +88,7 @@ Requires: prun%{PROJ_DELIM}
 
 BuildRequires: bison
 BuildRequires: libibmad-devel libibverbs-devel
+BuildRequires: librdmacm-devel
 
 # Default library install path
 %define install_path %{OHPC_MPI_STACKS}/%{name}/%version
@@ -98,6 +105,7 @@ across multiple networks.
 
 %setup -q -n %{pname}-%{version}
 %patch0 -p1
+%patch1 -p0
 
 %build
 

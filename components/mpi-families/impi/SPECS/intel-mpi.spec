@@ -15,13 +15,13 @@
 
 Summary:   Intel(R) MPI Library for Linux* OS
 Name:      intel-mpi%{PROJ_DELIM}
-Version:   5.1.1.109
+Version:   5.1.3.181
 Source0:   intel-impi%{PROJ_DELIM}-%{version}.tar.gz
 Source1:   OHPC_macros
 Release:   1
-License:   Intel
+License:   Intel Copyright 1999-2016
 URL:       https://software.intel.com/en-us/intel-mpi-library
-Group:     ohpc/mpi-families
+Group:     %{PROJ_NAME}/mpi-families
 BuildArch: x86_64
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 AutoReq:   no
@@ -29,7 +29,7 @@ AutoReq:   no
 
 Requires:  prun%{PROJ_DELIM}
 
-%define pstudio_ver 2016.0.109 
+%define pstudio_ver 2016.2.181
 
 %define __spec_install_post /usr/lib/rpm/brp-strip-comment-note /bin/true
 %define __spec_install_post /usr/lib/rpm/brp-compress /bin/true

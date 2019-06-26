@@ -38,8 +38,13 @@
 %{!?compiler_family: %define compiler_family gnu}
 %{!?mpi_family:      %define mpi_family openmpi}
 
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
+BuildRequires: lmod%{PROJ_DELIM}
+%endif
 # Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
+BuildRequires: coreutils
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -75,11 +80,11 @@ Requires:      openmpi-%{compiler_family}%{PROJ_DELIM}
 %define PNAME %(echo %{pname} | tr [a-z] [A-Z])
 
 Name:           %{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
-Version:        2.10.0b
+Version:        2.10.1
 Release:        0
 Summary:        Scalable algorithms for solving linear systems of equations
 License:        LGPL-2.1
-Group:          ohpc/parallel-libs
+Group:          %{PROJ_NAME}/parallel-libs
 Url:            http://www.llnl.gov/casc/hypre/
 Source:         https://computation.llnl.gov/project/linear_solvers/download/hypre-%{version}.tar.gz
 %if 0%{?suse_version} <= 1110

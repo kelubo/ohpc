@@ -37,8 +37,13 @@
 %{!?compiler_family: %define compiler_family gnu}
 %{!?mpi_family: %define mpi_family openmpi}
 
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
+BuildRequires: lmod%{PROJ_DELIM}
+%endif
 # Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
+BuildRequires: coreutils
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -74,14 +79,14 @@ Requires:      openmpi-%{compiler_family}%{PROJ_DELIM}
 
 
 Name:           python-%{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
-Version:        0.15.1
+Version:        0.16.1
 Release:        1
 Summary:        Scientific Tools for Python
 License:        BSD-3-Clause
-Group:          ohpc/dev-tools
+Group:          %{PROJ_NAME}/dev-tools
 Url:            http://www.scipy.org
 DocDir:         %{OHPC_PUB}/doc/contrib
-Source0:        http://sourceforge.net/projects/scipy/files/scipy/0.15.1/scipy-%{version}.tar.gz
+Source0:        http://sourceforge.net/projects/scipy/files/scipy/%{version}/scipy-%{version}.tar.gz
 BuildRequires:  blas-devel
 %if 0%{?sles_version} || 0%{?suse_version}
 BuildRequires:  fdupes

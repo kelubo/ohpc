@@ -25,10 +25,10 @@
 
 Summary:   Lua based Modules (lmod)
 Name:      %{pname}%{PROJ_DELIM}
-Version:   6.0.10
+Version:   6.0.24
 Release:   1
 License:   MIT
-Group:     ohpc/admin
+Group:     %{PROJ_NAME}/admin
 Url:       https://github.com/TACC/Lmod
 DocDir:    %{OHPC_PUB}/doc/contrib
 Source0:   https://github.com/TACC/Lmod/archive/%{version}.tar.gz#$/%{pname}-%{version}.tar.gz
@@ -42,6 +42,8 @@ BuildRequires: lua-posix%{PROJ_DELIM}
 
 BuildRequires: rsync
 BuildRequires: tcl
+
+Conflicts: environment-modules
 
 # 8/28/14 karl.w.schulz@intel.com - include patches to remove consulting notice and setting of TACC env variables
 Patch1: lmod.consulting.patch
@@ -99,7 +101,7 @@ export LMOD_COLORIZE=no
 export LMOD_PREPEND_BLOCK=normal
 
 if [ \$EUID -eq 0 ]; then
-    export MODULEPATH=%{OHPC_ADMIN}/modulefiles
+    export MODULEPATH=%{OHPC_ADMIN}/modulefiles:%{OHPC_MODULES}
 else
     export MODULEPATH=%{OHPC_MODULES}
 fi
@@ -132,7 +134,7 @@ if ( \$?SLURM_NODELIST ) then
 
 
     if ( \`id -u\` == "0" ) then
-       setenv MODULEPATH "%{OHPC_ADMIN}/modulefiles"
+       setenv MODULEPATH "%{OHPC_ADMIN}/modulefiles:%{OHPC_MODULES}"
     else   
        setenv MODULEPATH "%{OHPC_MODULES}"
     endif

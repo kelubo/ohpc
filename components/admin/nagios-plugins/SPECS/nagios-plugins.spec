@@ -25,7 +25,7 @@ Version: 2.1.1
 Release: 1%{?dist}
 Summary: Host/service/network monitoring program plugins for Nagios
 DocDir:  %{OHPC_PUB}/doc/contrib
-Group: ohpc/admin
+Group: %{PROJ_NAME}/admin
 
 License: GPLv3
 URL: https://www.nagios-plugins.org/
@@ -292,6 +292,7 @@ Summary: Nagios Plugin - check_flexlm
 Group: Applications/System
 Requires: %{name} = %{version}-%{release}
 Provides: %{pname}-flexlm
+AutoReq: no
 
 %description -n %{pname}-flexlm%{PROJ_DELIM}
 Provides check_flexlm support for Nagios.
@@ -366,6 +367,7 @@ Summary: Nagios Plugin - check_ifoperstatus
 Group: Applications/System
 Requires: %{name} = %{version}-%{release}
 Provides: %{pname}-ifoperstatus
+AutoReq: no
 
 %description -n %{pname}-ifoperstatus%{PROJ_DELIM}
 Provides check_ifoperstatus support for Nagios to monitor network interfaces.
@@ -375,6 +377,7 @@ Summary: Nagios Plugin - check_ifstatus
 Group: Applications/System
 Requires: %{name} = %{version}-%{release}
 Provides: %{pname}-ifstatus
+AutoReq: no
 
 %description -n %{pname}-ifstatus%{PROJ_DELIM}
 Provides check_ifstatus support for Nagios to monitor network interfaces.
@@ -582,12 +585,15 @@ Provides check_real (rtsp) support for Nagios.
 Summary: Nagios Plugin - check_rpc
 Group: Applications/System
 Requires: %{name} = %{version}-%{release}
-%if 0%{?fedora} || 0%{?rhel}
-Requires: %{_sbindir}/rpcinfo
-%else
-Requires: /sbin/rpcinfo
-%endif`
+#%if 0%{?fedora} || 0%{?rhel}
+#Requires: %{_sbindir}/rpcinfo
+#%else
+#Requires: /sbin/rpcinfo
+#%endif
+Requires: perl
+Requires: rpcbind
 Provides: %{pname}-rpc
+AutoReq: no
 
 %description -n %{pname}-rpc%{PROJ_DELIM}
 Provides check_rpc support for Nagios.

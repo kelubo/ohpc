@@ -19,14 +19,18 @@ Name:      lmod-defaults-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 Version:   1.2
 Release:   1
 License:   BSD
-Group:     ohpc/admin
+Group:     %{PROJ_NAME}/admin
 URL:       https://github.com/openhpc/ohpc
 BuildArch: noarch
 Source0:   OHPC_macros
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
-# OpenHPC dependencies
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
 requires: lmod%{PROJ_DELIM}
+%endif
+
 
 %description
 

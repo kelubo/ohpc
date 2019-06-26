@@ -21,7 +21,7 @@ Name:    %{pname}%{PROJ_DELIM}
 Version: 4.1.1
 Release: 1%{?dist}
 Summary: Host/service/network monitoring program
-Group:   ohpc/admin
+Group:   %{PROJ_NAME}/admin
 License: GPLv2
 URL: http://www.nagios.org/
 DocDir:  %{OHPC_PUB}/doc/contrib
@@ -103,7 +103,7 @@ Requires: %{pname}-common%{PROJ_DELIM}
 #Requires(pre): group(nagios)
 
 
-Summary: Nagios monitors hosts and services and yells if somethings breaks
+Summary: Nagios monitors hosts and services and yells if something breaks
 Summary(de): Nagios überwacht Dienste und Rechner und meldet Ihnen Ausfälle
 
 %description
@@ -282,6 +282,7 @@ fi
 %post
 %if 0%{?sles_version} || 0%{?suse_version}
 /usr/sbin/a2enmod php5
+/usr/sbin/a2enmod version
 %{_sbindir}/usermod -a -G %{pname} wwwrun || :
 /usr/bin/systemctl try-restart apache2 > /dev/null 2>&1 || :
 %else

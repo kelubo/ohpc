@@ -22,12 +22,17 @@
 %{!?compiler_family: %define compiler_family gnu}
 %{!?mpi_family:      %define mpi_family openmpi}
 
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
+BuildRequires: lmod%{PROJ_DELIM}
+%endif
+
 # Compiler dependencies 
 
 # Note: this package is slightly non-standard in that we always use
 # gnu compilers undernead in order to support call-site demangling
 
-BuildRequires: lmod%{PROJ_DELIM}
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
 
@@ -56,7 +61,7 @@ Name:      %{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
 Version:   3.4.1
 Release:   1
 License:   BSD-3
-Group:     ohpc/perf-tools
+Group:     %{PROJ_NAME}/perf-tools
 URL:       http://mpip.sourceforge.net/
 Source0:   http://sourceforge.net/projects/mpip/files/mpiP/mpiP-3.4.1/mpiP-%{version}.tar.gz
 Source1:   OHPC_macros

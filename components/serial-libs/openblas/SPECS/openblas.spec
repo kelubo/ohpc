@@ -37,8 +37,13 @@
 
 %{!?compiler_family: %define compiler_family gnu}
 
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
+BuildRequires: lmod%{PROJ_DELIM}
+%endif
 # Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
+BuildRequires: coreutils
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -58,11 +63,11 @@ BuildRequires: intel_licenses
 %define PNAME %(echo %{pname} | tr [a-z] [A-Z])
 
 Name:           %{pname}-%{compiler_family}%{PROJ_DELIM}
-Version:        0.2.14
-Release:        21.1
+Version:        0.2.15
+Release:        1
 Summary:        An optimized BLAS library based on GotoBLAS2
 License:        BSD-3-Clause
-Group:          Productivity/Scientific/Math
+Group:          %{PROJ_NAME}/serial-libs
 Url:            http://www.openblas.net
 Source0:        https://github.com/xianyi/OpenBLAS/archive/v%{version}.tar.gz#/%{pname}-%{version}.tar.gz
 Patch0:         openblas-libs.patch
@@ -70,8 +75,8 @@ Patch0:         openblas-libs.patch
 Patch1:         c_xerbla_no-void-return.patch
 # PATCH-FIX-UPSTREAM openblas-noexecstack.patch
 Patch2:         openblas-noexecstack.patch
-# PATCH-FIX-UPSTREAM openblas-arm64-build.patch
-Patch3:         openblas-arm64-build.patch
+# PATCH-FIX-UPSTREAM openblas-gemv.patch
+Patch3:         openblas-gemv.patch
 BuildRoot:      %{_tmppath}/%{pname}-%{version}-build
 ExclusiveArch:  %ix86 ia64 ppc ppc64 x86_64 aarch64
 DocDir:        %{OHPC_PUB}/doc/contrib

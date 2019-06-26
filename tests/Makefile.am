@@ -9,6 +9,9 @@ TESTS            =
 
 if ROOT_ENABLED
 
+if ADMIN_ENABLED
+   SUBDIRS += admin
+endif
 if BOS_ENABLED
    SUBDIRS += bos
 endif
@@ -18,12 +21,18 @@ endif
 if CLCK_ENABLED
    SUBDIRS += clck
 endif
-
 if LUSTRE_ENABLED
    SUBDIRS += lustre
 endif
+if SPACK_ENABLED
+   SUBDIRS += admin/spack
+endif
 
 else # non root tests
+
+if PACKAGING_ENABLED
+   TESTS += packaging/run
+endif
 
 if EASYBUILD_ENABLED
    SUBDIRS += dev-tools/easybuild
@@ -142,6 +151,10 @@ endif
 
 if NETCDF_ENABLED
    TESTS += libs/netcdf/ohpc-tests/test_mpi_families
+endif
+
+if OCR_ENABLED
+   TESTS += runtimes/ocr/ohpc-tests/test_compiler_families
 endif
 
 if OPENBLAS_ENABLED

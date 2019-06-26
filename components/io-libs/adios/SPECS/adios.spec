@@ -20,8 +20,12 @@
 %{!?compiler_family: %define compiler_family gnu}
 %{!?mpi_family:      %define mpi_family openmpi}
 
-# Compiler dependencies
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
 BuildRequires: lmod%{PROJ_DELIM}
+%endif
+# Compiler dependencies
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -62,15 +66,16 @@ Requires:      openmpi-%{compiler_family}%{PROJ_DELIM}
 
 Summary: The Adaptable IO System (ADIOS)
 Name:    %{pname}-%{compiler_family}-%{mpi_family}%{PROJ_DELIM}
-Version: 1.8.0
+Version: 1.9.0
 Release: 1
 License: BSD-3-Clause
-Group:   ohpc/io-libs
+Group:   %{PROJ_NAME}/io-libs
 DocDir:  %{OHPC_PUB}/doc/contrib
 Url:     http://www.olcf.ornl.gov/center-projects/adios/
 Source0: http://users.nccs.gov/~pnorbert/adios-%{version}.tar.gz 
 Source1: OHPC_macros
 Source2: OHPC_setup_compiler
+AutoReq: no
 
 # Minimum Build Requires - our mxml build included devel headers in libmxml1
 BuildRequires: libmxml1 cmake zlib-devel glib2-devel
@@ -96,6 +101,7 @@ BuildRequires: python-devel
 # BuildRequires: liblustre-devel
 BuildRequires: lustre-lite
 BuildRequires: python-numpy-%{compiler_family}%{PROJ_DELIM}
+Requires: lustre-client%{PROJ_DELIM}
 
 %if 0%{?sles_version} || 0%{?suse_version}
 # define fdupes, clean up rpmlint errors
@@ -167,6 +173,12 @@ export CFLAGS="-fp-model strict $CFLAGS"
 	--with-lustre=/usr/include/lustre \
 	--with-phdf5="$HDF5_DIR" \
 	--with-zlib=/usr \
+        --without-atl \
+        --without-cercs_env \
+        --without-dill \
+        --without-evpath \
+        --without-fastbit \
+        --without-ffs \
 	--with-netcdf="$NETCDF_DIR" || { cat config.log && exit 1; }
 # bzip2 support is confusing CMtests
 #	--with-bzip2=/usr \
@@ -189,6 +201,7 @@ export OHPC_COMPILER_FAMILY=%{compiler_family}
 export OHPC_MPI_FAMILY=%{mpi_family}
 . %{_sourcedir}/OHPC_setup_compiler
 . %{_sourcedir}/OHPC_setup_mpi
+export NO_BRP_CHECK_RPATH=true
 
 make DESTDIR=$RPM_BUILD_ROOT install
 

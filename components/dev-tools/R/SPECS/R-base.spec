@@ -36,8 +36,12 @@
 
 %{!?compiler_family: %define compiler_family gnu}
 
-# Compiler dependencies
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
 BuildRequires: lmod%{PROJ_DELIM}
+%endif
+# Compiler dependencies
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -61,14 +65,14 @@ BuildRequires: intel_licenses
 
 Name:		%{pname}%{PROJ_DELIM}
 Release:	1%{?dist}
-Version:        3.2.2
+Version:        3.2.3
 Source:         https://cran.r-project.org/src/base/R-3/R-%{version}.tar.gz
 Patch:          tre.patch
 Url:            http://www.r-project.org/
 DocDir:         %{OHPC_PUB}/doc/contrib
 Summary:        R is a language and environment for statistical computing and graphics (S-Plus like).
 License:        GPL-2.0 or GPL-3.0
-Group:          ohpc/dev-tools
+Group:          %{PROJ_NAME}/dev-tools
 BuildRoot:	%{_tmppath}/%{pname}-%{version}-%{release}-root
 
 # Default library install path
@@ -76,7 +80,6 @@ BuildRoot:	%{_tmppath}/%{pname}-%{version}-%{release}-root
 %define         debug_package %{nil}
 
 BuildRequires:  cairo-devel
-BuildRequires:  gcc-fortran
 BuildRequires:  libjpeg-devel
 BuildRequires:  libpng-devel
 BuildRequires:  libtiff-devel

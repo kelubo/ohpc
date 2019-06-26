@@ -38,8 +38,13 @@
 %{!?compiler_family: %define compiler_family gnu}
 %{!?mpi_family:      %define mpi_family openmpi}
 
+# Lmod dependency (note that lmod is pre-populated in the OpenHPC OBS build
+# environment; if building outside, lmod remains a formal build dependency).
+%if !0%{?OHPC_BUILD}
+BuildRequires: lmod%{PROJ_DELIM}
+%endif
 # Compiler dependencies
-BuildRequires: lmod%{PROJ_DELIM} coreutils
+BuildRequires: coreutils
 %if %{compiler_family} == gnu
 BuildRequires: gnu-compilers%{PROJ_DELIM}
 Requires:      gnu-compilers%{PROJ_DELIM}
@@ -79,7 +84,7 @@ Version:        5.0.1
 Release:        0
 Summary:        A MUltifrontal Massively Parallel Sparse direct Solver
 License:        CeCILL-C
-Group:          ohpc/parallel-libs
+Group:          %{PROJ_NAME}/parallel-libs
 Url:            http://mumps.enseeiht.fr/
 Source0:        http://mumps.enseeiht.fr/MUMPS_%{version}.tar.gz
 Source1:        Makefile.gnu.openmpi.inc

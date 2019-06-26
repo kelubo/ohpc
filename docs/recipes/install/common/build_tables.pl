@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 my @ohpcCategories    = ("admin","compiler-families","dev-tools","distro-packages","io-libs","lustre","mpi-families",
-                        "lustre","parallel-libs","serial-libs","perf-tools","provisioning","rms");
+                        "lustre","parallel-libs","serial-libs","perf-tools","provisioning","rms", "runtimes");
 my @compiler_familes = ("gnu","intel");
 my @mpi_families     = ("mvapich2","openmpi","impi");
 
@@ -14,6 +14,7 @@ my @single_package_exceptions = ();
 
 my %compiler_exceptions = ();
 $compiler_exceptions{"gsl"} = 1;
+$compiler_exceptions{"openblas"} = 1;
 
 # Define any asymmetric MPI packages
 my %mpi_exceptions = ();
